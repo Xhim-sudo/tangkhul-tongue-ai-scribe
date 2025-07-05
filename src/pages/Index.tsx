@@ -1,15 +1,36 @@
 
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { BookOpen, Users, BarChart3, Settings, Globe } from "lucide-react";
+import { useAuth } from '@/contexts/AuthContext';
+import { Navigate } from 'react-router-dom';
 import TranslationInterface from '../components/TranslationInterface';
 import KnowledgeLogger from '../components/KnowledgeLogger';
 import TrainingDashboard from '../components/TrainingDashboard';
 import UserManagement from '../components/UserManagement';
-import { Button } from "@/components/ui/button";
-import { BookOpen, Users, BarChart3, Settings, Globe } from "lucide-react";
+import UserProfile from '../components/UserProfile';
 
 const Index = () => {
+  const { user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState("translate");
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-yellow-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center mx-auto mb-4 animate-pulse">
+            <Globe className="w-8 h-8 text-white" />
+          </div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-yellow-50">
@@ -28,10 +49,7 @@ const Index = () => {
                 <p className="text-sm text-gray-600">English ↔ Tangkhul Language Bridge</p>
               </div>
             </div>
-            <Button variant="outline" className="border-orange-200 hover:bg-orange-50">
-              <Users className="w-4 h-4 mr-2" />
-              Contributors Portal
-            </Button>
+            <UserProfile />
           </div>
         </div>
       </header>
