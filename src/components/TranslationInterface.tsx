@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,7 +19,7 @@ const TranslationInterface = () => {
   // Load common phrases from database
   useEffect(() => {
     const loadCommonPhrases = async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from('training_entries')
         .select('english_text, tangkhul_text')
         .eq('status', 'approved')
@@ -77,7 +76,7 @@ const TranslationInterface = () => {
 
   const handleFeedback = async (isPositive: boolean) => {
     if (translatedText) {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('translations')
         .update({ feedback_rating: isPositive ? 5 : 1 })
         .eq('source_text', sourceText)
@@ -214,7 +213,7 @@ const TranslationInterface = () => {
         </CardHeader>
         <CardContent>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {commonPhrases.map((phrase, index) => (
+            {commonPhrases.map((phrase: any, index) => (
               <Button
                 key={index}
                 variant="outline"

@@ -20,7 +20,7 @@ export const useTranslation = () => {
       if (error) throw error;
 
       // Save translation to history
-      const { error: saveError } = await supabase
+      const { error: saveError } = await (supabase as any)
         .from('translations')
         .insert({
           source_text: text,
@@ -47,7 +47,7 @@ export const useTranslation = () => {
 
   const submitTrainingData = async (englishText: string, tangkhulText: string, category: string, context?: string, tags?: string[]) => {
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('training_entries')
         .insert({
           english_text: englishText,

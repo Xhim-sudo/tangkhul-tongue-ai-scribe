@@ -16,13 +16,13 @@ const KnowledgeLogger = () => {
   const [category, setCategory] = useState("");
   const [context, setContext] = useState("");
   const [tags, setTags] = useState("");
-  const [trainingEntries, setTrainingEntries] = useState([]);
+  const [trainingEntries, setTrainingEntries] = useState<any[]>([]);
   const { submitTrainingData } = useTranslation();
 
   // Load training entries
   useEffect(() => {
     const loadTrainingEntries = async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from('training_entries')
         .select(`
           *,
@@ -61,7 +61,7 @@ const KnowledgeLogger = () => {
       setTags("");
 
       // Reload entries
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from('training_entries')
         .select(`
           *,
@@ -204,7 +204,7 @@ const KnowledgeLogger = () => {
                   }>
                     {entry.confidence_score}% confidence
                   </Badge>
-                  {entry.tags?.map(tag => (
+                  {entry.tags?.map((tag: string) => (
                     <Badge key={tag} variant="secondary" className="bg-orange-100 text-orange-700">
                       <Tag className="w-3 h-3 mr-1" />
                       {tag}
