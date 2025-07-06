@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -26,23 +25,23 @@ const AccuracyDashboard = () => {
   const loadAccuracyStats = async () => {
     try {
       // Get overall accuracy
-      const { data: accuracyData } = await (supabase as any)
+      const { data: accuracyData } = await supabase
         .from('accuracy_metrics')
         .select('accuracy_percentage, total_contributions, golden_data_count');
 
       // Get golden data count
-      const { data: goldenData } = await (supabase as any)
+      const { data: goldenData } = await supabase
         .from('contributor_datasets')
         .select('id')
         .eq('is_golden_data', true);
 
       // Get total entries
-      const { data: totalEntries } = await (supabase as any)
+      const { data: totalEntries } = await supabase
         .from('training_entries')
         .select('id');
 
       // Get top contributors
-      const { data: topContributors } = await (supabase as any)
+      const { data: topContributors } = await supabase
         .from('accuracy_metrics')
         .select(`
           *,
@@ -52,7 +51,7 @@ const AccuracyDashboard = () => {
         .limit(5);
 
       // Get category accuracy
-      const { data: categoryData } = await (supabase as any)
+      const { data: categoryData } = await supabase
         .from('training_entries')
         .select('category, status')
         .eq('status', 'approved');

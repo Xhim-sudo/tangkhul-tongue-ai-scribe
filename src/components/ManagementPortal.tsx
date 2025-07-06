@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -78,7 +77,7 @@ const ManagementPortal = () => {
 
   const loadPendingApprovals = async () => {
     try {
-      const { data } = await (supabase as any)
+      const { data } = await supabase
         .from('user_approvals')
         .select(`
           *,
@@ -95,7 +94,7 @@ const ManagementPortal = () => {
 
   const loadAccuracyMetrics = async () => {
     try {
-      const { data } = await (supabase as any)
+      const { data } = await supabase
         .from('accuracy_metrics')
         .select(`
           *,
@@ -112,16 +111,16 @@ const ManagementPortal = () => {
 
   const loadSystemStats = async () => {
     try {
-      const { data: contributors } = await (supabase as any)
+      const { data: contributors } = await supabase
         .from('profiles')
         .select('id');
 
-      const { data: goldenData } = await (supabase as any)
+      const { data: goldenData } = await supabase
         .from('contributor_datasets')
         .select('id')
         .eq('is_golden_data', true);
 
-      const { data: accuracyData } = await (supabase as any)
+      const { data: accuracyData } = await supabase
         .from('accuracy_metrics')
         .select('accuracy_percentage');
 
@@ -142,7 +141,7 @@ const ManagementPortal = () => {
 
   const approveUser = async (approvalId: string, userId: string, phoneNumber: string, approve: boolean) => {
     try {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('user_approvals')
         .update({
           status: approve ? 'approved' : 'rejected',
@@ -155,7 +154,7 @@ const ManagementPortal = () => {
       if (error) throw error;
 
       // Send WhatsApp notification
-      const { data: userData } = await (supabase as any)
+      const { data: userData } = await supabase
         .from('profiles')
         .select('full_name')
         .eq('id', userId)
