@@ -7,18 +7,405 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instanciate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "12.2.3 (519615d)"
+  }
   public: {
     Tables: {
-      [_ in never]: never
+      accuracy_metrics: {
+        Row: {
+          accuracy_percentage: number | null
+          contributor_id: string
+          golden_data_count: number | null
+          id: string
+          last_calculated: string
+          total_contributions: number | null
+          validated_contributions: number | null
+        }
+        Insert: {
+          accuracy_percentage?: number | null
+          contributor_id: string
+          golden_data_count?: number | null
+          id?: string
+          last_calculated?: string
+          total_contributions?: number | null
+          validated_contributions?: number | null
+        }
+        Update: {
+          accuracy_percentage?: number | null
+          contributor_id?: string
+          golden_data_count?: number | null
+          id?: string
+          last_calculated?: string
+          total_contributions?: number | null
+          validated_contributions?: number | null
+        }
+        Relationships: []
+      }
+      contributor_datasets: {
+        Row: {
+          accuracy_score: number | null
+          category: string | null
+          context: string | null
+          contributor_id: string
+          created_at: string
+          english_text: string
+          id: string
+          is_golden_data: boolean | null
+          tags: string[] | null
+          tangkhul_text: string
+          updated_at: string
+          validation_count: number | null
+        }
+        Insert: {
+          accuracy_score?: number | null
+          category?: string | null
+          context?: string | null
+          contributor_id: string
+          created_at?: string
+          english_text: string
+          id?: string
+          is_golden_data?: boolean | null
+          tags?: string[] | null
+          tangkhul_text: string
+          updated_at?: string
+          validation_count?: number | null
+        }
+        Update: {
+          accuracy_score?: number | null
+          category?: string | null
+          context?: string | null
+          contributor_id?: string
+          created_at?: string
+          english_text?: string
+          id?: string
+          is_golden_data?: boolean | null
+          tags?: string[] | null
+          tangkhul_text?: string
+          updated_at?: string
+          validation_count?: number | null
+        }
+        Relationships: []
+      }
+      data_exports: {
+        Row: {
+          export_type: string
+          exported_at: string
+          file_format: string
+          file_size: number | null
+          id: string
+          record_count: number
+          user_id: string
+        }
+        Insert: {
+          export_type: string
+          exported_at?: string
+          file_format: string
+          file_size?: number | null
+          id?: string
+          record_count: number
+          user_id: string
+        }
+        Update: {
+          export_type?: string
+          exported_at?: string
+          file_format?: string
+          file_size?: number | null
+          id?: string
+          record_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      invitations: {
+        Row: {
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string
+          phone_number: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          token: string
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          invited_by: string
+          phone_number?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          token: string
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          phone_number?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          token?: string
+          used_at?: string | null
+        }
+        Relationships: []
+      }
+      management_access: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          is_active: boolean | null
+          last_used: string | null
+          password_hash: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          is_active?: boolean | null
+          last_used?: string | null
+          password_hash: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean | null
+          last_used?: string | null
+          password_hash?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          phone_number: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id: string
+          phone_number?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          phone_number?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      training_entries: {
+        Row: {
+          category: string | null
+          confidence_score: number | null
+          context: string | null
+          contributor_id: string
+          created_at: string
+          english_text: string
+          id: string
+          reviewer_id: string | null
+          status: string | null
+          tags: string[] | null
+          tangkhul_text: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          confidence_score?: number | null
+          context?: string | null
+          contributor_id: string
+          created_at?: string
+          english_text: string
+          id?: string
+          reviewer_id?: string | null
+          status?: string | null
+          tags?: string[] | null
+          tangkhul_text: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          confidence_score?: number | null
+          context?: string | null
+          contributor_id?: string
+          created_at?: string
+          english_text?: string
+          id?: string
+          reviewer_id?: string | null
+          status?: string | null
+          tags?: string[] | null
+          tangkhul_text?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      translations: {
+        Row: {
+          confidence_score: number | null
+          created_at: string
+          feedback_rating: number | null
+          id: string
+          source_language: string
+          source_text: string
+          target_language: string
+          translated_text: string
+          user_id: string | null
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string
+          feedback_rating?: number | null
+          id?: string
+          source_language?: string
+          source_text: string
+          target_language?: string
+          translated_text: string
+          user_id?: string | null
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string
+          feedback_rating?: number | null
+          id?: string
+          source_language?: string
+          source_text?: string
+          target_language?: string
+          translated_text?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      user_approvals: {
+        Row: {
+          approval_notes: string | null
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          id: string
+          invited_by: string
+          phone_number: string
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          approval_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          id?: string
+          invited_by: string
+          phone_number: string
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          approval_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          id?: string
+          invited_by?: string
+          phone_number?: string
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      whatsapp_logs: {
+        Row: {
+          delivered_at: string | null
+          id: string
+          message_content: string
+          message_type: string
+          recipient_phone: string
+          sent_at: string
+          status: string | null
+        }
+        Insert: {
+          delivered_at?: string | null
+          id?: string
+          message_content: string
+          message_type: string
+          recipient_phone: string
+          sent_at?: string
+          status?: string | null
+        }
+        Update: {
+          delivered_at?: string | null
+          id?: string
+          message_content?: string
+          message_type?: string
+          recipient_phone?: string
+          sent_at?: string
+          status?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calculate_contributor_accuracy: {
+        Args: { contributor_uuid: string }
+        Returns: number
+      }
+      has_role: {
+        Args: {
+          _user_id: string
+          _role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: boolean
+      }
+      mark_golden_data: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "expert" | "reviewer" | "contributor"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -26,21 +413,25 @@ export type Database = {
   }
 }
 
-type DefaultSchema = Database[Extract<keyof Database, "public">]
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
@@ -58,14 +449,16 @@ export type Tables<
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
@@ -81,14 +474,16 @@ export type TablesInsert<
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
@@ -104,14 +499,16 @@ export type TablesUpdate<
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
@@ -119,20 +516,24 @@ export type Enums<
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "expert", "reviewer", "contributor"],
+    },
   },
 } as const

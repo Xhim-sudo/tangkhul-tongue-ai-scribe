@@ -1,11 +1,14 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Target, Award, Database, Download, RefreshCw } from "lucide-react";
+import { Award, Download, RefreshCw } from "lucide-react";
 import { useDataExport } from '@/hooks/useDataExport';
 import { supabase } from '@/integrations/supabase/client';
+import AccuracyHeader from './AccuracyHeader';
+import AccuracyStats from './AccuracyStats';
 
 const AccuracyDashboard = () => {
   const { exportGoldenData, isExporting } = useDataExport();
@@ -103,83 +106,20 @@ const AccuracyDashboard = () => {
     }
   };
 
-  const accuracyColor = accuracyStats.overallAccuracy >= 99 ? 'text-green-600' : 
-                       accuracyStats.overallAccuracy >= 95 ? 'text-blue-600' : 
-                       accuracyStats.overallAccuracy >= 90 ? 'text-yellow-600' : 'text-red-600';
-
-  const progressColor = accuracyStats.overallAccuracy >= 99 ? 'bg-green-500' : 
-                       accuracyStats.overallAccuracy >= 95 ? 'bg-blue-500' : 
-                       accuracyStats.overallAccuracy >= 90 ? 'bg-yellow-500' : 'bg-red-500';
-
   return (
     <div className="space-y-6">
       {/* Main Accuracy Display */}
-      <Card className="bg-gradient-to-br from-orange-500 to-red-600 text-white border-0">
-        <CardContent className="p-8">
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-4 mb-4">
-              <Target className="w-12 h-12 text-orange-200" />
-              <div>
-                <h2 className="text-4xl font-bold">{accuracyStats.overallAccuracy}%</h2>
-                <p className="text-orange-100">Overall System Accuracy</p>
-              </div>
-            </div>
-            
-            <div className="w-full bg-orange-300/30 rounded-full h-4 mb-4">
-              <div 
-                className="bg-white/80 h-4 rounded-full transition-all duration-500"
-                style={{ width: `${(accuracyStats.overallAccuracy / accuracyStats.targetAccuracy) * 100}%` }}
-              ></div>
-            </div>
-            
-            <div className="flex justify-center items-center gap-6 text-sm">
-              <div>
-                <span className="text-orange-100">Target: </span>
-                <span className="font-bold">{accuracyStats.targetAccuracy}%</span>
-              </div>
-              <div>
-                <span className="text-orange-100">Progress: </span>
-                <span className="font-bold">{Math.round((accuracyStats.overallAccuracy / accuracyStats.targetAccuracy) * 100)}%</span>
-              </div>
-              <div>
-                <span className="text-orange-100">Status: </span>
-                <span className="font-bold">
-                  {accuracyStats.overallAccuracy >= 99 ? 'AI Ready!' : 'Training'}
-                </span>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <AccuracyHeader 
+        overallAccuracy={accuracyStats.overallAccuracy}
+        targetAccuracy={accuracyStats.targetAccuracy}
+      />
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-white/70 backdrop-blur-sm border-orange-200">
-          <CardContent className="p-6 text-center">
-            <Database className="w-8 h-8 text-blue-500 mx-auto mb-2" />
-            <div className="text-2xl font-bold text-blue-600">{accuracyStats.totalEntries.toLocaleString()}</div>
-            <div className="text-sm text-gray-600">Total Training Entries</div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white/70 backdrop-blur-sm border-orange-200">
-          <CardContent className="p-6 text-center">
-            <Award className="w-8 h-8 text-green-500 mx-auto mb-2" />
-            <div className="text-2xl font-bold text-green-600">{accuracyStats.goldenEntries.toLocaleString()}</div>
-            <div className="text-sm text-gray-600">Golden Dataset Entries</div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white/70 backdrop-blur-sm border-orange-200">
-          <CardContent className="p-6 text-center">
-            <TrendingUp className="w-8 h-8 text-purple-500 mx-auto mb-2" />
-            <div className={`text-2xl font-bold ${accuracyColor}`}>
-              {accuracyStats.overallAccuracy >= 99 ? 'Ready!' : 'Training'}
-            </div>
-            <div className="text-sm text-gray-600">AI Integration Status</div>
-          </CardContent>
-        </Card>
-      </div>
+      <AccuracyStats 
+        totalEntries={accuracyStats.totalEntries}
+        goldenEntries={accuracyStats.goldenEntries}
+        overallAccuracy={accuracyStats.overallAccuracy}
+      />
 
       {/* Management Actions */}
       <Card className="bg-white/70 backdrop-blur-sm border-orange-200">

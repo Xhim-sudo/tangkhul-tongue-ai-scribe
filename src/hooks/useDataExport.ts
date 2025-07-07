@@ -10,12 +10,12 @@ export const useDataExport = () => {
     setIsExporting(true);
     try {
       // Fetch contributor's data
-      const { data: contributorData } = await (supabase as any)
+      const { data: contributorData } = await supabase
         .from('contributor_datasets')
         .select('*')
         .eq('contributor_id', contributorId);
 
-      const { data: trainingData } = await (supabase as any)
+      const { data: trainingData } = await supabase
         .from('training_entries')
         .select('*')
         .eq('contributor_id', contributorId);
@@ -29,7 +29,7 @@ export const useDataExport = () => {
       };
 
       // Log the export
-      await (supabase as any)
+      await supabase
         .from('data_exports')
         .insert({
           user_id: contributorId,
@@ -67,7 +67,7 @@ export const useDataExport = () => {
   const exportGoldenData = async (format: 'csv' | 'json' | 'xlsx' = 'json') => {
     setIsExporting(true);
     try {
-      const { data: goldenData } = await (supabase as any)
+      const { data: goldenData } = await supabase
         .from('contributor_datasets')
         .select(`
           *,
@@ -85,14 +85,17 @@ export const useDataExport = () => {
       };
 
       // Log the export
-      await (supabase as any)
-        .from('data_exports')
-        .insert({
-          user_id: (await supabase.auth.getUser()).data.user?.id,
-          export_type: 'golden',
-          file_format: format,
-          record_count: exportData.total_entries
-        });
+      const user = await supabase.auth.getUser();
+      if (user.data.user) {
+        await supabase
+          .from('data_exports')
+          .insert({
+            user_id: user.data.user.id,
+            export_type: 'golden',
+            file_format: format,
+            record_count: exportData.total_entries
+          });
+      }
 
       const fileName = `golden_dataset_${Date.now()}.${format}`;
       const fileContent = format === 'json' 
