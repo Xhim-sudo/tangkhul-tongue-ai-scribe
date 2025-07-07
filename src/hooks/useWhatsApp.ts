@@ -1,18 +1,38 @@
 
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
 
 export const useWhatsApp = () => {
   const [isSending, setIsSending] = useState(false);
 
-  const sendWhatsAppInvitation = async (phoneNumber: string, inviterName: string, role: string) => {
+  const sendWhatsAppInvitation = async (
+    phoneNumber: string,
+    inviterName: string,
+    role: string,
+    staffId?: string
+  ) => {
     setIsSending(true);
     try {
-      const message = `Hello! You've been invited by ${inviterName} to join our Tangkhul AI Training Platform as a ${role}. This is an important project to preserve and digitize our language. Please visit our platform to get started and help us reach 99% accuracy for our AI model. Your contributions matter!`;
+      const message = `🎉 You've been invited to join Tangkhul AI Translation Platform!
 
-      // Log the WhatsApp message
-      const { error } = await (supabase as any)
+👋 Hi! ${inviterName} has invited you to contribute to our AI translation project as a ${role}.
+
+🆔 Your Staff ID: ${staffId || 'Will be provided'}
+📧 Use this Staff ID during registration
+
+🌐 To get started:
+1. Visit our platform
+2. Click "Sign Up"
+3. Enter your Staff ID: ${staffId || '[ID]'}
+4. Complete your registration
+
+Thank you for helping preserve and digitize the Tangkhul language! 🙏
+
+Best regards,
+Tangkhul AI Team`;
+
+      // Log WhatsApp message (in production, this would integrate with WhatsApp API)
+      const { error } = await supabase
         .from('whatsapp_logs')
         .insert({
           recipient_phone: phoneNumber,
@@ -23,36 +43,41 @@ export const useWhatsApp = () => {
 
       if (error) throw error;
 
-      // In production, you would integrate with WhatsApp Business API or Twilio
-      // For now, we'll simulate the message sending
-      console.log(`WhatsApp invitation sent to ${phoneNumber}: ${message}`);
-
-      toast({
-        title: "Invitation sent via WhatsApp",
-        description: `Message sent to ${phoneNumber}`,
-      });
-
-      return { success: true };
+      // Simulate sending (in production, integrate with WhatsApp Business API)
+      console.log('WhatsApp invitation sent:', { phoneNumber, message });
+      
+      return { success: true, message: 'Invitation sent successfully' };
     } catch (error: any) {
-      toast({
-        title: "Failed to send WhatsApp invitation",
-        description: error.message,
-        variant: "destructive",
-      });
+      console.error('WhatsApp invitation error:', error);
       throw error;
     } finally {
       setIsSending(false);
     }
   };
 
-  const sendApprovalNotification = async (phoneNumber: string, userName: string, approved: boolean) => {
-    const status = approved ? 'approved' : 'rejected';
-    const message = approved 
-      ? `Great news ${userName}! Your account has been approved. You can now start contributing to the Tangkhul AI Training Platform. Let's work together to reach 99% accuracy!`
-      : `Hello ${userName}, unfortunately your account application was not approved at this time. Please contact the administrator if you have questions.`;
-
+  const sendApprovalNotification = async (
+    phoneNumber: string,
+    userName: string,
+    approved: boolean
+  ) => {
+    setIsSending(true);
     try {
-      await (supabase as any)
+      const message = approved
+        ? `✅ Great news ${userName}! Your Tangkhul AI account has been approved!
+
+You can now access all platform features:
+🔤 Translate text
+📚 Contribute training data
+📊 View accuracy metrics
+
+Welcome to the team! 🎉`
+        : `❌ Hi ${userName}, unfortunately your Tangkhul AI account application was not approved at this time.
+
+Please contact your administrator for more information.
+
+Thank you for your interest in our project.`;
+
+      const { error } = await supabase
         .from('whatsapp_logs')
         .insert({
           recipient_phone: phoneNumber,
@@ -61,9 +86,16 @@ export const useWhatsApp = () => {
           status: 'sent'
         });
 
-      console.log(`WhatsApp ${status} notification sent to ${phoneNumber}`);
-    } catch (error) {
-      console.error('Failed to log WhatsApp notification:', error);
+      if (error) throw error;
+
+      console.log('WhatsApp approval notification sent:', { phoneNumber, approved });
+      
+      return { success: true };
+    } catch (error: any) {
+      console.error('WhatsApp approval notification error:', error);
+      throw error;
+    } finally {
+      setIsSending(false);
     }
   };
 

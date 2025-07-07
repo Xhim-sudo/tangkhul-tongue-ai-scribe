@@ -119,6 +119,42 @@ export type Database = {
         }
         Relationships: []
       }
+      error_logs: {
+        Row: {
+          component_name: string | null
+          created_at: string
+          error_message: string
+          error_stack: string | null
+          error_type: string
+          id: string
+          url: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          component_name?: string | null
+          created_at?: string
+          error_message: string
+          error_stack?: string | null
+          error_type: string
+          id?: string
+          url?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          component_name?: string | null
+          created_at?: string
+          error_message?: string
+          error_stack?: string | null
+          error_type?: string
+          id?: string
+          url?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       invitations: {
         Row: {
           created_at: string
@@ -128,6 +164,7 @@ export type Database = {
           invited_by: string
           phone_number: string | null
           role: Database["public"]["Enums"]["app_role"]
+          staff_id: string | null
           token: string
           used_at: string | null
         }
@@ -139,6 +176,7 @@ export type Database = {
           invited_by: string
           phone_number?: string | null
           role?: Database["public"]["Enums"]["app_role"]
+          staff_id?: string | null
           token: string
           used_at?: string | null
         }
@@ -150,6 +188,7 @@ export type Database = {
           invited_by?: string
           phone_number?: string | null
           role?: Database["public"]["Enums"]["app_role"]
+          staff_id?: string | null
           token?: string
           used_at?: string | null
         }
@@ -159,26 +198,32 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string
+          expires_at: string | null
           id: string
           is_active: boolean | null
           last_used: string | null
           password_hash: string
+          password_label: string | null
         }
         Insert: {
           created_at?: string
           created_by: string
+          expires_at?: string | null
           id?: string
           is_active?: boolean | null
           last_used?: string | null
           password_hash: string
+          password_label?: string | null
         }
         Update: {
           created_at?: string
           created_by?: string
+          expires_at?: string | null
           id?: string
           is_active?: boolean | null
           last_used?: string | null
           password_hash?: string
+          password_label?: string | null
         }
         Relationships: []
       }
@@ -190,6 +235,7 @@ export type Database = {
           id: string
           phone_number: string | null
           role: Database["public"]["Enums"]["app_role"]
+          staff_id: string | null
           updated_at: string
         }
         Insert: {
@@ -199,6 +245,7 @@ export type Database = {
           id: string
           phone_number?: string | null
           role?: Database["public"]["Enums"]["app_role"]
+          staff_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -208,6 +255,7 @@ export type Database = {
           id?: string
           phone_number?: string | null
           role?: Database["public"]["Enums"]["app_role"]
+          staff_id?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -391,6 +439,10 @@ export type Database = {
       calculate_contributor_accuracy: {
         Args: { contributor_uuid: string }
         Returns: number
+      }
+      generate_staff_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       has_role: {
         Args: {

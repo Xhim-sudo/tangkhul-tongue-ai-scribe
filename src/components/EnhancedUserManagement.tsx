@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, UserPlus, Phone, Download, MessageCircle, TrendingUp } from "lucide-react";
+import { Users, UserPlus, Phone, Download, MessageCircle, TrendingUp, Copy, CheckCircle } from "lucide-react";
 import { useWhatsApp } from '@/hooks/useWhatsApp';
 import { useDataExport } from '@/hooks/useDataExport';
 import { useAuth } from '@/contexts/AuthContext';
+import { useError } from '@/contexts/ErrorContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -16,10 +17,13 @@ const EnhancedUserManagement = () => {
   const { userProfile } = useAuth();
   const { sendWhatsAppInvitation, isSending } = useWhatsApp();
   const { exportIndividualData, isExporting } = useDataExport();
+  const { logError } = useError();
   const [invitePhone, setInvitePhone] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("contributor");
   const [users, setUsers] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [copiedStaffId, setCopiedStaffId] = useState<string | null>(null);
 
   useEffect(() => {
     loadUsers();
@@ -27,7 +31,7 @@ const EnhancedUserManagement = () => {
 
   const loadUsers = async () => {
     try {
-      const { data } = await (supabase as any)
+      const { data, error } = await supabase
         .from('profiles')
         .select(`
           *,
@@ -35,9 +39,10 @@ const EnhancedUserManagement = () => {
         `)
         .order('created_at', { ascending: false });
 
+      if (error) throw error;
       setUsers(data || []);
-    } catch (error) {
-      console.error('Failed to load users:', error);
+    } catch (error: any) {
+      logError(error, 'EnhancedUserManagement.loadUsers');
     }
   };
 
@@ -51,30 +56,50 @@ const EnhancedUserManagement = () => {
       return;
     }
 
+    if (!inviteEmail.trim()) {
+      toast({
+        title: "Email required",
+        description: "Please enter an email address for the invitation.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      // Create invitation record
-      const { error } = await (supabase as any)
+      // Create invitation record with auto-generated staff ID
+      const { data: invitationData, error } = await supabase
         .from('invitations')
         .insert({
+          email: inviteEmail,
           phone_number: invitePhone,
           role: inviteRole,
           invited_by: userProfile?.id,
           token: crypto.randomUUID(),
           expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
-      // Send WhatsApp invitation
+      // Send WhatsApp invitation with staff ID
       await sendWhatsAppInvitation(
         invitePhone,
         userProfile?.full_name || 'Admin',
-        inviteRole
+        inviteRole,
+        invitationData.staff_id // Pass the generated staff ID
       );
 
+      toast({
+        title: "Invitation sent successfully",
+        description: `WhatsApp invitation sent to ${invitePhone} with Staff ID: ${invitationData.staff_id}`,
+      });
+
       setInvitePhone("");
+      setInviteEmail("");
       setInviteRole("contributor");
     } catch (error: any) {
+      logError(error, 'EnhancedUserManagement.handleWhatsAppInvite');
       toast({
         title: "Invitation failed",
         description: error.message,
@@ -91,6 +116,7 @@ const EnhancedUserManagement = () => {
         description: `${userName}'s data is being exported`,
       });
     } catch (error: any) {
+      logError(error, 'EnhancedUserManagement.handleExportUserData');
       toast({
         title: "Export failed",
         description: error.message,
@@ -99,9 +125,28 @@ const EnhancedUserManagement = () => {
     }
   };
 
+  const copyStaffId = async (staffId: string) => {
+    try {
+      await navigator.clipboard.writeText(staffId);
+      setCopiedStaffId(staffId);
+      toast({
+        title: "Staff ID copied",
+        description: `Staff ID ${staffId} copied to clipboard`,
+      });
+      setTimeout(() => setCopiedStaffId(null), 2000);
+    } catch (error) {
+      toast({
+        title: "Copy failed",
+        description: "Failed to copy staff ID to clipboard",
+        variant: "destructive",
+      });
+    }
+  };
+
   const filteredUsers = users.filter(user =>
     user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.staff_id?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -115,17 +160,22 @@ const EnhancedUserManagement = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <Input
-                placeholder="Enter phone number (e.g., +1234567890)"
-                value={invitePhone}
-                onChange={(e) => setInvitePhone(e.target.value)}
-                className="border-orange-200 focus:border-orange-400"
-              />
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Input
+              placeholder="Enter email address"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              className="border-orange-200 focus:border-orange-400"
+              type="email"
+            />
+            <Input
+              placeholder="Enter phone number (e.g., +1234567890)"
+              value={invitePhone}
+              onChange={(e) => setInvitePhone(e.target.value)}
+              className="border-orange-200 focus:border-orange-400"
+            />
             <Select value={inviteRole} onValueChange={setInviteRole}>
-              <SelectTrigger className="w-40 border-orange-200">
+              <SelectTrigger className="border-orange-200">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -140,9 +190,12 @@ const EnhancedUserManagement = () => {
               className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
             >
               <Phone className="w-4 h-4 mr-2" />
-              {isSending ? 'Sending...' : 'Send WhatsApp Invite'}
+              {isSending ? 'Sending...' : 'Send Invite'}
             </Button>
           </div>
+          <p className="text-sm text-gray-600 mt-2">
+            A unique Staff ID will be automatically generated and sent with the invitation.
+          </p>
         </CardContent>
       </Card>
 
@@ -157,7 +210,7 @@ const EnhancedUserManagement = () => {
         <CardContent className="space-y-4">
           {/* Search */}
           <Input
-            placeholder="Search contributors..."
+            placeholder="Search contributors by name, email, or staff ID..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="border-orange-200 focus:border-orange-400"
@@ -178,12 +231,28 @@ const EnhancedUserManagement = () => {
                         <div>
                           <h3 className="font-medium">{user.full_name || 'Unknown User'}</h3>
                           <p className="text-sm text-gray-600">{user.email}</p>
-                          {user.phone_number && (
-                            <div className="flex items-center gap-1 text-sm text-gray-500">
-                              <Phone className="w-3 h-3" />
-                              {user.phone_number}
-                            </div>
-                          )}
+                          <div className="flex items-center gap-2 mt-1">
+                            {user.phone_number && (
+                              <div className="flex items-center gap-1 text-sm text-gray-500">
+                                <Phone className="w-3 h-3" />
+                                {user.phone_number}
+                              </div>
+                            )}
+                            {user.staff_id && (
+                              <button
+                                onClick={() => copyStaffId(user.staff_id)}
+                                className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 transition-colors"
+                                title="Click to copy Staff ID"
+                              >
+                                {copiedStaffId === user.staff_id ? (
+                                  <CheckCircle className="w-3 h-3" />
+                                ) : (
+                                  <Copy className="w-3 h-3" />
+                                )}
+                                ID: {user.staff_id}
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -211,7 +280,7 @@ const EnhancedUserManagement = () => {
                         )}
                       </div>
 
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
                         <div>
                           <span className="text-gray-500">Joined:</span>
                           <span className="ml-2 font-medium">{new Date(user.created_at).toLocaleDateString()}</span>
@@ -227,6 +296,10 @@ const EnhancedUserManagement = () => {
                         <div>
                           <span className="text-gray-500">Golden Data:</span>
                           <span className="ml-2 font-medium">{metrics?.golden_data_count || 0}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Staff ID:</span>
+                          <span className="ml-2 font-medium">{user.staff_id || 'Not assigned'}</span>
                         </div>
                       </div>
                     </div>
