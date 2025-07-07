@@ -64,34 +64,11 @@ const ManagementPortal = () => {
     setIsAuthenticating(true);
 
     try {
-      // In production, you would verify against hashed passwords in the database
-      // For now, we'll use a configurable password system
-      const { data: accessData, error } = await supabase
-        .from('management_access')
-        .select('*')
-        .eq('is_active', true)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      // For demo purposes, we'll accept a default password if no records exist
-      const isValidPassword = !accessData 
-        ? managementPassword === "TangkhulAI2024!" 
-        : managementPassword === "TangkhulAI2024!"; // In production, use proper bcrypt comparison
+      // Simple password check - in production, use proper authentication
+      const isValidPassword = managementPassword === "000000";
 
       if (isValidPassword) {
         setIsAuthenticated(true);
-        
-        // Update last_used timestamp
-        if (accessData) {
-          await supabase
-            .from('management_access')
-            .update({ last_used: new Date().toISOString() })
-            .eq('id', accessData.id);
-        }
-
         toast({
           title: "Access granted",
           description: "Welcome to the management portal",
@@ -293,6 +270,9 @@ const ManagementPortal = () => {
               <Shield className="w-4 h-4 mr-2" />
               {isAuthenticating ? 'Authenticating...' : 'Authenticate'}
             </Button>
+            <p className="text-xs text-gray-500 text-center">
+              Management password: 000000
+            </p>
           </CardContent>
         </Card>
       </div>

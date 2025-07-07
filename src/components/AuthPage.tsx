@@ -5,102 +5,52 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Eye, EyeOff, Languages, AlertCircle, CheckCircle, Loader2 } from "lucide-react";
 import { useAuth } from '@/contexts/AuthContext';
 import { useError } from '@/contexts/ErrorContext';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { Eye, EyeOff, User, Mail, Phone, Key } from 'lucide-react';
 
 const AuthPage = () => {
   const { signIn, signUp } = useAuth();
   const { logError } = useError();
-  const [activeTab, setActiveTab] = useState('signin');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
-  // Sign In Form
-  const [signInEmail, setSignInEmail] = useState('');
-  const [signInPassword, setSignInPassword] = useState('');
+  // Login form state
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
   
-  // Sign Up Form
-  const [signUpEmail, setSignUpEmail] = useState('');
-  const [signUpPassword, setSignUpPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  // Sign up form state
+  const [signupEmail, setSignupEmail] = useState('');
+  const [signupPassword, setSignupPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [staffId, setStaffId] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
-  
-  // Validation states
-  const [staffIdValidation, setStaffIdValidation] = useState<{
-    isValid: boolean;
-    isChecking: boolean;
-    message: string;
-  }>({ isValid: false, isChecking: false, message: '' });
+  const [staffId, setStaffId] = useState('');
 
-  const validateStaffId = async (id: string) => {
-    if (!id.trim()) {
-      setStaffIdValidation({ isValid: false, isChecking: false, message: '' });
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!loginEmail || !loginPassword) {
+      toast({
+        title: "Missing information",
+        description: "Please enter both email and password.",
+        variant: "destructive",
+      });
       return;
     }
 
-    setStaffIdValidation({ isValid: false, isChecking: true, message: 'Checking staff ID...' });
-
-    try {
-      // Check if staff ID exists in invitations table
-      const { data: invitation, error } = await supabase
-        .from('invitations')
-        .select('*')
-        .eq('staff_id', id.toUpperCase())
-        .eq('used_at', null)
-        .gt('expires_at', new Date().toISOString())
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (invitation) {
-        setStaffIdValidation({
-          isValid: true,
-          isChecking: false,
-          message: 'Valid staff ID found!'
-        });
-        // Auto-fill email if it matches the invitation
-        if (invitation.email && !signUpEmail) {
-          setSignUpEmail(invitation.email);
-        }
-      } else {
-        setStaffIdValidation({
-          isValid: false,
-          isChecking: false,
-          message: 'Invalid or expired staff ID. Please contact your administrator.'
-        });
-      }
-    } catch (error: any) {
-      logError(error, 'AuthPage.validateStaffId');
-      setStaffIdValidation({
-        isValid: false,
-        isChecking: false,
-        message: 'Error validating staff ID. Please try again.'
-      });
-    }
-  };
-
-  const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
     setIsLoading(true);
-
     try {
-      await signIn(signInEmail, signInPassword);
+      await signIn(loginEmail, loginPassword);
       toast({
         title: "Welcome back!",
-        description: "You have successfully signed in.",
+        description: "You have been successfully logged in.",
       });
     } catch (error: any) {
-      logError(error, 'AuthPage.handleSignIn');
+      logError(error, 'AuthPage.handleLogin');
       toast({
-        title: "Sign in failed",
-        description: error.message || "Please check your credentials and try again.",
+        title: "Login failed",
+        description: error.message || "Invalid email or password.",
         variant: "destructive",
       });
     } finally {
@@ -110,60 +60,33 @@ const AuthPage = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Validation
-    if (!staffIdValidation.isValid) {
+    
+    if (!signupEmail || !signupPassword || !fullName) {
       toast({
-        title: "Invalid Staff ID",
-        description: "Please enter a valid staff ID to continue.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (signUpPassword !== confirmPassword) {
-      toast({
-        title: "Passwords don't match",
-        description: "Please make sure both passwords are identical.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (signUpPassword.length < 6) {
-      toast({
-        title: "Password too short",
-        description: "Password must be at least 6 characters long.",
+        title: "Missing information",
+        description: "Please fill in all required fields.",
         variant: "destructive",
       });
       return;
     }
 
     setIsLoading(true);
-
     try {
-      // Sign up the user
-      await signUp(signUpEmail, signUpPassword, {
+      await signUp(signupEmail, signupPassword, {
         full_name: fullName,
         phone_number: phoneNumber,
-        staff_id: staffId.toUpperCase()
+        staff_id: staffId,
       });
-
-      // Mark the invitation as used
-      await supabase
-        .from('invitations')
-        .update({ used_at: new Date().toISOString() })
-        .eq('staff_id', staffId.toUpperCase());
-
+      
       toast({
         title: "Account created successfully!",
-        description: "Welcome to Tangkhul AI Translation Platform.",
+        description: "Please check your email to verify your account.",
       });
     } catch (error: any) {
       logError(error, 'AuthPage.handleSignUp');
       toast({
         title: "Sign up failed",
-        description: error.message || "An error occurred during registration.",
+        description: error.message || "An error occurred during sign up.",
         variant: "destructive",
       });
     } finally {
@@ -173,241 +96,167 @@ const AuthPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Languages className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Tangkhul AI</h1>
-          <p className="text-gray-600">Translation Platform</p>
-        </div>
-
-        <Card className="bg-white/80 backdrop-blur-sm border-orange-200">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <CardHeader>
-              <TabsList className="grid w-full grid-cols-2 bg-orange-50">
-                <TabsTrigger value="signin" className="data-[state=active]:bg-white">Sign In</TabsTrigger>
-                <TabsTrigger value="signup" className="data-[state=active]:bg-white">Sign Up</TabsTrigger>
-              </TabsList>
-            </CardHeader>
-
-            <CardContent>
-              <TabsContent value="signin" className="space-y-4">
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
+      <Card className="w-full max-w-md bg-white/80 backdrop-blur-sm border-orange-200">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold text-orange-800">
+            Tangkhul AI Scribe
+          </CardTitle>
+          <p className="text-gray-600">Join our language preservation project</p>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="login" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="login">Login</TabsTrigger>
+              <TabsTrigger value="signup">Sign Up</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="login">
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="login-email">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <Input
-                      id="signin-email"
+                      id="login-email"
                       type="email"
                       placeholder="Enter your email"
-                      value={signInEmail}
-                      onChange={(e) => setSignInEmail(e.target.value)}
-                      className="border-orange-200 focus:border-orange-400"
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      className="pl-10 border-orange-200 focus:border-orange-400"
                       required
-                      disabled={isLoading}
                     />
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-password">Password</Label>
-                    <div className="relative">
-                      <Input
-                        id="signin-password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Enter your password"
-                        value={signInPassword}
-                        onChange={(e) => setSignInPassword(e.target.value)}
-                        className="border-orange-200 focus:border-orange-400 pr-10"
-                        required
-                        disabled={isLoading}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                        disabled={isLoading}
-                      >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <Button
-                    type="submit"
-                    className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Signing In...
-                      </>
-                    ) : (
-                      'Sign In'
-                    )}
-                  </Button>
-                </form>
-              </TabsContent>
-
-              <TabsContent value="signup" className="space-y-4">
-                <form onSubmit={handleSignUp} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="staff-id">Staff ID *</Label>
-                    <div className="relative">
-                      <Input
-                        id="staff-id"
-                        type="text"
-                        placeholder="Enter your staff ID"
-                        value={staffId}
-                        onChange={(e) => {
-                          const value = e.target.value.toUpperCase();
-                          setStaffId(value);
-                          if (value) {
-                            validateStaffId(value);
-                          } else {
-                            setStaffIdValidation({ isValid: false, isChecking: false, message: '' });
-                          }
-                        }}
-                        className={`border-orange-200 focus:border-orange-400 pr-10 ${
-                          staffIdValidation.isValid ? 'border-green-300' :
-                          staffIdValidation.message && !staffIdValidation.isValid ? 'border-red-300' : ''
-                        }`}
-                        required
-                        disabled={isLoading}
-                      />
-                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                        {staffIdValidation.isChecking ? (
-                          <Loader2 className="w-4 h-4 animate-spin text-gray-500" />
-                        ) : staffIdValidation.isValid ? (
-                          <CheckCircle className="w-4 h-4 text-green-500" />
-                        ) : staffIdValidation.message ? (
-                          <AlertCircle className="w-4 h-4 text-red-500" />
-                        ) : null}
-                      </div>
-                    </div>
-                    {staffIdValidation.message && (
-                      <Alert className={staffIdValidation.isValid ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}>
-                        <AlertDescription className={staffIdValidation.isValid ? "text-green-700" : "text-red-700"}>
-                          {staffIdValidation.message}
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="full-name">Full Name *</Label>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="login-password">Password</Label>
+                  <div className="relative">
+                    <Key className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <Input
-                      id="full-name"
+                      id="login-password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Enter your password"
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      className="pl-10 pr-10 border-orange-200 focus:border-orange-400"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+                
+                <Button 
+                  type="submit" 
+                  className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700"
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Signing in...' : 'Sign In'}
+                </Button>
+              </form>
+            </TabsContent>
+            
+            <TabsContent value="signup">
+              <form onSubmit={handleSignUp} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="signup-name">Full Name *</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      id="signup-name"
                       type="text"
                       placeholder="Enter your full name"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      className="border-orange-200 focus:border-orange-400"
+                      className="pl-10 border-orange-200 focus:border-orange-400"
                       required
-                      disabled={isLoading}
                     />
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email *</Label>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="signup-email">Email *</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <Input
                       id="signup-email"
                       type="email"
                       placeholder="Enter your email"
-                      value={signUpEmail}
-                      onChange={(e) => setSignUpEmail(e.target.value)}
-                      className="border-orange-200 focus:border-orange-400"
+                      value={signupEmail}
+                      onChange={(e) => setSignupEmail(e.target.value)}
+                      className="pl-10 border-orange-200 focus:border-orange-400"
                       required
-                      disabled={isLoading}
                     />
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="phone-number">Phone Number</Label>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="signup-phone">Phone Number</Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <Input
-                      id="phone-number"
+                      id="signup-phone"
                       type="tel"
                       placeholder="Enter your phone number"
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
-                      className="border-orange-200 focus:border-orange-400"
-                      disabled={isLoading}
+                      className="pl-10 border-orange-200 focus:border-orange-400"
                     />
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password">Password *</Label>
-                    <div className="relative">
-                      <Input
-                        id="signup-password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Create a password"
-                        value={signUpPassword}
-                        onChange={(e) => setSignUpPassword(e.target.value)}
-                        className="border-orange-200 focus:border-orange-400 pr-10"
-                        required
-                        minLength={6}
-                        disabled={isLoading}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                        disabled={isLoading}
-                      >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="signup-staff-id">Staff ID</Label>
+                  <Input
+                    id="signup-staff-id"
+                    type="text"
+                    placeholder="Enter your staff ID (if you have one)"
+                    value={staffId}
+                    onChange={(e) => setStaffId(e.target.value)}
+                    className="border-orange-200 focus:border-orange-400"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="signup-password">Password *</Label>
+                  <div className="relative">
+                    <Key className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      id="signup-password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Create a password"
+                      value={signupPassword}
+                      onChange={(e) => setSignupPassword(e.target.value)}
+                      className="pl-10 pr-10 border-orange-200 focus:border-orange-400"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="confirm-password">Confirm Password *</Label>
-                    <div className="relative">
-                      <Input
-                        id="confirm-password"
-                        type={showConfirmPassword ? "text" : "password"}
-                        placeholder="Confirm your password"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="border-orange-200 focus:border-orange-400 pr-10"
-                        required
-                        disabled={isLoading}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                        disabled={isLoading}
-                      >
-                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <Button
-                    type="submit"
-                    className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700"
-                    disabled={isLoading || !staffIdValidation.isValid}
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Creating Account...
-                      </>
-                    ) : (
-                      'Create Account'
-                    )}
-                  </Button>
-                </form>
-              </TabsContent>
-            </CardContent>
+                </div>
+                
+                <Button 
+                  type="submit" 
+                  className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700"
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Creating account...' : 'Create Account'}
+                </Button>
+              </form>
+            </TabsContent>
           </Tabs>
-        </Card>
-
-        <p className="text-center text-sm text-gray-600 mt-6">
-          Need help? Contact your administrator for a staff ID.
-        </p>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
