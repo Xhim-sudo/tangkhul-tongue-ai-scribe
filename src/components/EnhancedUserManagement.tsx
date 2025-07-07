@@ -12,6 +12,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useError } from '@/contexts/ErrorContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import type { Database } from '@/integrations/supabase/types';
+
+type UserRole = Database['public']['Enums']['app_role'];
 
 const EnhancedUserManagement = () => {
   const { userProfile } = useAuth();
@@ -20,7 +23,7 @@ const EnhancedUserManagement = () => {
   const { logError } = useError();
   const [invitePhone, setInvitePhone] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState("contributor");
+  const [inviteRole, setInviteRole] = useState<UserRole>("contributor");
   const [users, setUsers] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [copiedStaffId, setCopiedStaffId] = useState<string | null>(null);
@@ -174,7 +177,7 @@ const EnhancedUserManagement = () => {
               onChange={(e) => setInvitePhone(e.target.value)}
               className="border-orange-200 focus:border-orange-400"
             />
-            <Select value={inviteRole} onValueChange={setInviteRole}>
+            <Select value={inviteRole} onValueChange={(value: UserRole) => setInviteRole(value)}>
               <SelectTrigger className="border-orange-200">
                 <SelectValue />
               </SelectTrigger>
