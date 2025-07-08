@@ -53,16 +53,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Defer profile fetch to avoid auth callback issues
-          setTimeout(() => {
-            fetchUserProfile(session.user.id);
-          }, 0);
+          // Fetch profile after auth state change
+          await fetchUserProfile(session.user.id);
         } else {
           setUserProfile(null);
         }
@@ -97,8 +95,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchUserProfile = async (userId: string) => {
+  const fetchUserProfile = async (userId: string, retryCount = 0) => {
     try {
+      console.log('Fetching profile for user:', userId);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -107,14 +106,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error('Error fetching user profile:', error);
+        
+        // If profile doesn't exist and we haven't retried too many times, try creating it
+        if (error.code === 'PGRST116' && retryCount < 2) {
+          console.log('Profile not found, attempting to create...');
+          await createUserProfile(userId);
+          // Retry fetching after creation attempt
+          setTimeout(() => fetchUserProfile(userId, retryCount + 1), 1000);
+          return;
+        }
         return;
       }
 
       if (data) {
+        console.log('Profile found:', data);
         setUserProfile(data);
+      } else {
+        console.log('No profile found for user:', userId);
+        // Try to create profile if it doesn't exist
+        if (retryCount < 2) {
+          await createUserProfile(userId);
+          setTimeout(() => fetchUserProfile(userId, retryCount + 1), 1000);
+        }
       }
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
+    }
+  };
+
+  const createUserProfile = async (userId: string) => {
+    try {
+      const { data: authUser } = await supabase.auth.getUser();
+      if (!authUser.user) return;
+
+      console.log('Creating profile for user:', userId);
+      const { error } = await supabase
+        .from('profiles')
+        .insert({
+          id: userId,
+          email: authUser.user.email || '',
+          full_name: authUser.user.user_metadata?.full_name || authUser.user.email,
+          phone_number: authUser.user.user_metadata?.phone_number || null,
+          staff_id: authUser.user.user_metadata?.staff_id || null,
+          role: 'contributor'
+        });
+
+      if (error) {
+        console.error('Error creating user profile:', error);
+      } else {
+        console.log('Profile created successfully');
+      }
+    } catch (error) {
+      console.error('Error in createUserProfile:', error);
     }
   };
 
