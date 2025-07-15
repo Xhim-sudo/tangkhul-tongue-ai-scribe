@@ -23,10 +23,13 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    console.error('🚨 ErrorBoundary caught error:', error);
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('🚨 ErrorBoundary componentDidCatch:', error, errorInfo);
+    
     this.setState({
       error,
       errorInfo,
@@ -36,16 +39,15 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
     if (this.props.onError) {
       this.props.onError(error, errorInfo);
     }
-
-    // Log error to console
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
   }
 
   handleReset = () => {
+    console.log('🔄 ErrorBoundary reset requested');
     this.setState({ hasError: false, error: undefined, errorInfo: undefined });
   };
 
   handleGoHome = () => {
+    console.log('🏠 ErrorBoundary home navigation requested');
     window.location.href = '/';
   };
 
