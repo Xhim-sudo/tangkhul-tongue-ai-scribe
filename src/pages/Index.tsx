@@ -6,7 +6,6 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import TranslationInterface from "@/components/TranslationInterface";
 import KnowledgeLogger from "@/components/KnowledgeLogger";
 import AccuracyDashboard from "@/components/AccuracyDashboard";
-import EnhancedUserManagement from "@/components/EnhancedUserManagement";
 import ManagementPortal from "@/components/ManagementPortal";
 import { useError } from "@/contexts/ErrorContext";
 
@@ -25,9 +24,6 @@ const Index = () => {
         case "accuracy":
           return hasRole('admin') || hasRole('expert') || hasRole('reviewer') ? 
             <AccuracyDashboard /> : <div>Access denied</div>;
-        case "users":
-          return hasRole('admin') ? 
-            <EnhancedUserManagement /> : <div>Access denied</div>;
         case "management":
           return hasRole('admin') ? 
             <ManagementPortal /> : <div>Access denied</div>;

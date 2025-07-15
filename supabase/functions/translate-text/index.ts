@@ -18,7 +18,31 @@ serve(async (req) => {
   }
 
   try {
+    // Check if OpenAI API key is available
+    if (!openaiApiKey) {
+      console.error('OpenAI API key not found');
+      return new Response(JSON.stringify({ 
+        error: "Translation service configuration error",
+        translated_text: "Translation service is temporarily unavailable. Please try again later.",
+        confidence_score: 0
+      }), {
+        status: 200, // Return 200 to prevent client-side errors
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const { text, source_language, target_language } = await req.json();
+    
+    if (!text || !source_language || !target_language) {
+      return new Response(JSON.stringify({ 
+        error: "Missing required parameters",
+        translated_text: "Please provide text and language parameters.",
+        confidence_score: 0
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     
     const supabase = createClient(supabaseUrl!, supabaseServiceKey!);
     
@@ -52,6 +76,8 @@ ${contextExamples}`;
       ? `Translate this English text to Tangkhul: "${text}"`
       : `Translate this Tangkhul text to English: "${text}"`;
 
+    console.log('Making OpenAI API request...');
+    
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -69,12 +95,39 @@ ${contextExamples}`;
       }),
     });
 
+    console.log('OpenAI API response status:', response.status);
+
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('OpenAI API error:', response.status, errorText);
+      
+      return new Response(JSON.stringify({ 
+        error: `OpenAI API error: ${response.status === 401 ? 'Unauthorized - Please check API key' : response.statusText}`,
+        translated_text: "Translation service temporarily unavailable. Please try again later.",
+        confidence_score: 0
+      }), {
+        status: 200, // Return 200 to prevent client-side errors
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const data = await response.json();
+    
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      console.error('Invalid OpenAI response structure:', data);
+      return new Response(JSON.stringify({ 
+        error: "Invalid response from translation service",
+        translated_text: "Translation service temporarily unavailable. Please try again later.",
+        confidence_score: 0
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const translatedText = data.choices[0].message.content.trim();
+
+    console.log('Translation successful');
 
     return new Response(JSON.stringify({ 
       translated_text: translatedText,
@@ -92,7 +145,7 @@ ${contextExamples}`;
       translated_text: "Translation service temporarily unavailable. Please try again later.",
       confidence_score: 0
     }), {
-      status: 500,
+      status: 200, // Return 200 to prevent client-side errors
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

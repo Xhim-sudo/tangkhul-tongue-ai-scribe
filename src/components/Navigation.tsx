@@ -8,7 +8,6 @@ import {
   User, 
   Shield, 
   Database, 
-  Users, 
   MessageSquare, 
   BarChart3,
   Menu,
@@ -52,12 +51,6 @@ const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange }) => {
       label: 'Accuracy Dashboard',
       icon: BarChart3,
       roles: ['admin', 'expert', 'reviewer']
-    },
-    {
-      id: 'users',
-      label: 'User Management',
-      icon: Users,
-      roles: ['admin']
     },
     {
       id: 'management',
