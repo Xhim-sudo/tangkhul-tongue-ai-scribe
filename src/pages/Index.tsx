@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import Navigation from "@/components/Navigation";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import TranslationInterface from "@/components/TranslationInterface";
-import TrainingDashboard from "@/components/TrainingDashboard";
+import KnowledgeLogger from "@/components/KnowledgeLogger";
 import AccuracyDashboard from "@/components/AccuracyDashboard";
 import EnhancedUserManagement from "@/components/EnhancedUserManagement";
 import ManagementPortal from "@/components/ManagementPortal";
@@ -21,7 +21,7 @@ const Index = () => {
         case "translate":
           return <TranslationInterface />;
         case "training":
-          return <TrainingDashboard />;
+          return <KnowledgeLogger />;
         case "accuracy":
           return hasRole('admin') || hasRole('expert') || hasRole('reviewer') ? 
             <AccuracyDashboard /> : <div>Access denied</div>;
