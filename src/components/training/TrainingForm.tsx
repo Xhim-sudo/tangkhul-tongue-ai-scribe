@@ -1,10 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Save, Upload, Mic } from "lucide-react";
+import { Plus, Save } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TrainingFormProps {
   onSubmit: (data: {
@@ -23,11 +24,41 @@ const TrainingForm = ({ onSubmit, isLoading = false }: TrainingFormProps) => {
   const [category, setCategory] = useState("");
   const [context, setContext] = useState("");
   const [tags, setTags] = useState("");
+  const [categories, setCategories] = useState<Array<{id: string, name: string}>>([]);
 
-  const categories = [
-    "greetings", "expressions", "numbers", "colors", "family", 
-    "food", "nature", "time", "directions", "emotions"
-  ];
+  // Load categories from database
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  const loadCategories = async () => {
+    try {
+      const { data } = await (supabase as any)
+        .from('training_categories')
+        .select('id, name')
+        .eq('is_active', true)
+        .order('name');
+      
+      if (data) {
+        setCategories(data);
+      }
+    } catch (error) {
+      console.error('Failed to load categories:', error);
+      // Fallback to default categories if database query fails
+      setCategories([
+        { id: '1', name: 'greetings' },
+        { id: '2', name: 'expressions' },
+        { id: '3', name: 'numbers' },
+        { id: '4', name: 'colors' },
+        { id: '5', name: 'family' },
+        { id: '6', name: 'food' },
+        { id: '7', name: 'nature' },
+        { id: '8', name: 'time' },
+        { id: '9', name: 'directions' },
+        { id: '10', name: 'emotions' }
+      ]);
+    }
+  };
 
   const handleSubmit = () => {
     if (!englishText.trim() || !tangkhulText.trim()) return;
@@ -90,7 +121,7 @@ const TrainingForm = ({ onSubmit, isLoading = false }: TrainingFormProps) => {
               </SelectTrigger>
               <SelectContent>
                 {categories.map(cat => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -116,29 +147,17 @@ const TrainingForm = ({ onSubmit, isLoading = false }: TrainingFormProps) => {
         </div>
 
         <div className="flex justify-between items-center">
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="border-orange-200">
-              <Upload className="w-4 h-4 mr-2" />
-              Batch Upload
-            </Button>
-            <Button variant="outline" size="sm" className="border-orange-200">
-              <Mic className="w-4 h-4 mr-2" />
-              Record Audio
-            </Button>
+          <div className="text-sm text-gray-600">
+            💡 Tip: Multiple submissions of the same phrase help determine accuracy through consensus
           </div>
-          <div className="flex items-center gap-4">
-            <div className="text-sm text-gray-600">
-              💡 Tip: High-accuracy contributions become part of the golden dataset
-            </div>
-            <Button 
-              onClick={handleSubmit}
-              className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700"
-              disabled={!englishText.trim() || !tangkhulText.trim() || isLoading}
-            >
-              <Save className="w-4 h-4 mr-2" />
-              Submit for Review
-            </Button>
-          </div>
+          <Button 
+            onClick={handleSubmit}
+            className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700"
+            disabled={!englishText.trim() || !tangkhulText.trim() || isLoading}
+          >
+            <Save className="w-4 h-4 mr-2" />
+            Submit Training Data
+          </Button>
         </div>
       </CardContent>
     </Card>

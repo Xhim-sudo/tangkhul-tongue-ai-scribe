@@ -12,6 +12,7 @@ import { useError } from '@/contexts/ErrorContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import SystemOverview from './SystemOverview';
+import CategoryManagement from './CategoryManagement';
 
 const ManagementPortal = () => {
   const { hasRole, userProfile } = useAuth();
@@ -283,6 +284,9 @@ const ManagementPortal = () => {
     <div className="space-y-6">
       {/* System Overview */}
       <SystemOverview systemStats={systemStats} />
+
+      {/* Category Management */}
+      <CategoryManagement />
 
       {/* Management Actions */}
       <Card className="bg-white/70 backdrop-blur-sm border-orange-200">

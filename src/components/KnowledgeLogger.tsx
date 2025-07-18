@@ -18,11 +18,11 @@ const KnowledgeLogger = () => {
     goldenEntries: 0,
     rank: 0
   });
-  const [communityStats] = useState({
-    totalEntries: 1247,
-    verifiedEntries: 892,
-    contributors: 15,
-    averageConfidence: 87
+  const [communityStats, setCommunityStats] = useState({
+    totalEntries: 0,
+    verifiedEntries: 0,
+    contributors: 10,
+    averageConfidence: 100
   });
   const { submitTrainingData } = useTranslation();
   const { user } = useAuth();
@@ -31,11 +31,12 @@ const KnowledgeLogger = () => {
   useEffect(() => {
     loadTrainingEntries();
     loadUserStats();
+    loadCommunityStats();
   }, [user]);
 
   const loadTrainingEntries = async () => {
     const { data } = await (supabase as any)
-      .from('training_entries')
+      .from('training_submissions_log')
       .select(`
         *,
         profiles:contributor_id(full_name)
@@ -57,7 +58,7 @@ const KnowledgeLogger = () => {
         .from('accuracy_metrics')
         .select('*')
         .eq('contributor_id', user.id)
-        .single();
+        .maybeSingle();
 
       // Get user's rank
       const { data: allMetrics } = await (supabase as any)
@@ -78,6 +79,34 @@ const KnowledgeLogger = () => {
     }
   };
 
+  const loadCommunityStats = async () => {
+    try {
+      // Get total submissions
+      const { count: totalSubmissions } = await (supabase as any)
+        .from('training_submissions_log')
+        .select('*', { count: 'exact', head: true });
+
+      // Get consensus data
+      const { data: consensusData } = await (supabase as any)
+        .from('translation_consensus')
+        .select('*');
+
+      // Get contributor count
+      const { data: contributorData } = await (supabase as any)
+        .from('accuracy_metrics')
+        .select('contributor_id');
+
+      setCommunityStats({
+        totalEntries: totalSubmissions || 0,
+        verifiedEntries: consensusData?.filter(c => c.is_golden_data).length || 0,
+        contributors: contributorData?.length || 10,
+        averageConfidence: Math.round(consensusData?.reduce((sum, c) => sum + c.agreement_score, 0) / consensusData?.length || 100)
+      });
+    } catch (error) {
+      console.error('Failed to load community stats:', error);
+    }
+  };
+
   const handleTrainingSubmit = async (formData: {
     englishText: string;
     tangkhulText: string;
@@ -86,19 +115,10 @@ const KnowledgeLogger = () => {
     tags: string;
   }) => {
     try {
-      // Submit to training data
-      await submitTrainingData(
-        formData.englishText,
-        formData.tangkhulText,
-        formData.category,
-        formData.context,
-        formData.tags.split(",").map(tag => tag.trim()).filter(Boolean)
-      );
-
-      // Also save to contributor datasets for individual tracking
+      // Submit to the new training submissions log table
       if (user) {
         await (supabase as any)
-          .from('contributor_datasets')
+          .from('training_submissions_log')
           .insert({
             contributor_id: user.id,
             english_text: formData.englishText,
@@ -106,13 +126,14 @@ const KnowledgeLogger = () => {
             category: formData.category,
             context: formData.context,
             tags: formData.tags.split(",").map(tag => tag.trim()).filter(Boolean),
-            accuracy_score: 85 // Initial score, will be updated by validation
+            confidence_score: 85
           });
       }
 
       // Reload data
       loadTrainingEntries();
       loadUserStats();
+      loadCommunityStats();
     } catch (error) {
       console.error('Failed to save entry:', error);
     }
