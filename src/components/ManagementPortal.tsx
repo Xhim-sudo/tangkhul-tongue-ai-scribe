@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import SystemOverview from './SystemOverview';
 import CategoryManagement from './CategoryManagement';
+import TrainingDataManagement from './TrainingDataManagement';
 
 const ManagementPortal = () => {
   const { hasRole, userProfile } = useAuth();

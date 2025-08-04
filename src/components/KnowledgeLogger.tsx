@@ -27,52 +27,79 @@ const KnowledgeLogger = () => {
   const { submitTrainingData } = useTranslation();
   const { user } = useAuth();
 
-  // Load training entries and user stats
+  // Load training entries and user stats with real-time updates
   useEffect(() => {
-    loadTrainingEntries();
-    loadUserStats();
-    loadCommunityStats();
+    if (user) {
+      loadUserStats();
+      loadCommunityStats();
+      
+      // Set up real-time subscription for submissions
+      const channel = supabase
+        .channel('training-submissions-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'training_submissions_log'
+          },
+          () => {
+            loadUserStats();
+            loadCommunityStats();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
   }, [user]);
 
-  const loadTrainingEntries = async () => {
-    const { data } = await (supabase as any)
-      .from('training_submissions_log')
-      .select(`
-        *,
-        profiles:contributor_id(full_name)
-      `)
-      .order('created_at', { ascending: false })
-      .limit(20);
-    
-    if (data) {
-      setTrainingEntries(data);
-    }
-  };
 
   const loadUserStats = async () => {
     if (!user) return;
 
     try {
-      // Get user's accuracy metrics
-      const { data: metrics } = await (supabase as any)
-        .from('accuracy_metrics')
-        .select('*')
-        .eq('contributor_id', user.id)
-        .maybeSingle();
+      // Get user's submissions count
+      const { count: submissionsCount, error: submissionsError } = await supabase
+        .from('training_submissions_log')
+        .select('*', { count: 'exact', head: true })
+        .eq('contributor_id', user.id);
 
-      // Get user's rank
-      const { data: allMetrics } = await (supabase as any)
-        .from('accuracy_metrics')
-        .select('contributor_id, accuracy_percentage')
-        .order('accuracy_percentage', { ascending: false });
+      if (submissionsError) throw submissionsError;
 
-      const userRank = allMetrics?.findIndex(m => m.contributor_id === user.id) + 1 || 0;
+      // Calculate accuracy based on consensus matches
+      const { data: userSubmissions, error: userSubmissionsError } = await supabase
+        .from('training_submissions_log')
+        .select('english_text, tangkhul_text')
+        .eq('contributor_id', user.id);
+
+      if (userSubmissionsError) throw userSubmissionsError;
+
+      let accurateSubmissions = 0;
+      for (const submission of userSubmissions || []) {
+        const { data: consensus, error: consensusError } = await supabase
+          .from('translation_consensus')
+          .select('agreement_score')
+          .eq('english_text', submission.english_text)
+          .eq('tangkhul_text', submission.tangkhul_text)
+          .single();
+
+        if (!consensusError && consensus && consensus.agreement_score >= 80) {
+          accurateSubmissions++;
+        }
+      }
+
+      const accuracy = submissionsCount && submissionsCount > 0 
+        ? (accurateSubmissions / submissionsCount) * 100 
+        : 0;
 
       setUserStats({
-        totalContributions: metrics?.total_contributions || 0,
-        accuracy: metrics?.accuracy_percentage || 0,
-        goldenEntries: metrics?.golden_data_count || 0,
-        rank: userRank
+        totalContributions: submissionsCount || 0,
+        accuracy: Math.round(accuracy * 100) / 100,
+        goldenEntries: accurateSubmissions,
+        rank: 1 // Simplified for now
       });
     } catch (error) {
       console.error('Failed to load user stats:', error);
@@ -82,25 +109,29 @@ const KnowledgeLogger = () => {
   const loadCommunityStats = async () => {
     try {
       // Get total submissions
-      const { count: totalSubmissions } = await (supabase as any)
+      const { count: totalSubmissions } = await supabase
         .from('training_submissions_log')
         .select('*', { count: 'exact', head: true });
 
       // Get consensus data
-      const { data: consensusData } = await (supabase as any)
+      const { data: consensusData } = await supabase
         .from('translation_consensus')
         .select('*');
 
-      // Get contributor count
-      const { data: contributorData } = await (supabase as any)
-        .from('accuracy_metrics')
+      // Get unique contributors
+      const { data: contributorData } = await supabase
+        .from('training_submissions_log')
         .select('contributor_id');
+
+      const uniqueContributors = new Set(contributorData?.map(c => c.contributor_id) || []).size;
 
       setCommunityStats({
         totalEntries: totalSubmissions || 0,
         verifiedEntries: consensusData?.filter(c => c.is_golden_data).length || 0,
-        contributors: contributorData?.length || 10,
-        averageConfidence: Math.round(consensusData?.reduce((sum, c) => sum + c.agreement_score, 0) / consensusData?.length || 100)
+        contributors: uniqueContributors || 0,
+        averageConfidence: consensusData && consensusData.length > 0 
+          ? Math.round(consensusData.reduce((sum, c) => sum + (c.agreement_score || 0), 0) / consensusData.length)
+          : 0
       });
     } catch (error) {
       console.error('Failed to load community stats:', error);
@@ -114,27 +145,36 @@ const KnowledgeLogger = () => {
     context: string;
     tags: string;
   }) => {
-    try {
-      // Submit to the new training submissions log table
-      if (user) {
-        await (supabase as any)
-          .from('training_submissions_log')
-          .insert({
-            contributor_id: user.id,
-            english_text: formData.englishText,
-            tangkhul_text: formData.tangkhulText,
-            category: formData.category,
-            context: formData.context,
-            tags: formData.tags.split(",").map(tag => tag.trim()).filter(Boolean),
-            confidence_score: 85
-          });
-      }
+    if (!user) return;
 
-      // Reload data
-      loadTrainingEntries();
-      loadUserStats();
-      loadCommunityStats();
-    } catch (error) {
+    try {
+      const tagsArray = formData.tags
+        ? formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
+        : [];
+
+      // Generate hash for the English text
+      const encoder = new TextEncoder();
+      const data = encoder.encode(formData.englishText.toLowerCase().trim());
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+      const { error } = await supabase
+        .from('training_submissions_log')
+        .insert({
+          english_text: formData.englishText,
+          tangkhul_text: formData.tangkhulText,
+          category: formData.category,
+          context: formData.context || null,
+          tags: tagsArray,
+          contributor_id: user.id,
+          submission_hash: hashHex
+        });
+
+      if (error) throw error;
+
+      // Stats will reload automatically via real-time subscription
+    } catch (error: any) {
       console.error('Failed to save entry:', error);
     }
   };
@@ -171,8 +211,6 @@ const KnowledgeLogger = () => {
       {/* Community Overview */}
       <CommunityOverview stats={communityStats} />
 
-      {/* Training Entries List */}
-      <TrainingEntriesList entries={trainingEntries} />
     </div>
   );
 };

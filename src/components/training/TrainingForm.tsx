@@ -26,9 +26,29 @@ const TrainingForm = ({ onSubmit, isLoading = false }: TrainingFormProps) => {
   const [tags, setTags] = useState("");
   const [categories, setCategories] = useState<Array<{id: string, name: string}>>([]);
 
-  // Load categories from database
+  // Load categories from database with real-time updates
   useEffect(() => {
     loadCategories();
+    
+    // Set up real-time subscription for categories
+    const channel = supabase
+      .channel('training-categories-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'training_categories'
+        },
+        () => {
+          loadCategories();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const loadCategories = async () => {

@@ -260,6 +260,33 @@ export type Database = {
         }
         Relationships: []
       }
+      training_categories: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+        }
+        Relationships: []
+      }
       training_entries: {
         Row: {
           category: string | null
@@ -300,6 +327,87 @@ export type Database = {
           reviewer_id?: string | null
           status?: string | null
           tags?: string[] | null
+          tangkhul_text?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      training_submissions_log: {
+        Row: {
+          category: string
+          confidence_score: number | null
+          context: string | null
+          contributor_id: string
+          created_at: string
+          english_text: string
+          id: string
+          is_consensus_correct: boolean | null
+          submission_hash: string
+          tags: string[] | null
+          tangkhul_text: string
+          validated_at: string | null
+          validator_id: string | null
+        }
+        Insert: {
+          category: string
+          confidence_score?: number | null
+          context?: string | null
+          contributor_id: string
+          created_at?: string
+          english_text: string
+          id?: string
+          is_consensus_correct?: boolean | null
+          submission_hash: string
+          tags?: string[] | null
+          tangkhul_text: string
+          validated_at?: string | null
+          validator_id?: string | null
+        }
+        Update: {
+          category?: string
+          confidence_score?: number | null
+          context?: string | null
+          contributor_id?: string
+          created_at?: string
+          english_text?: string
+          id?: string
+          is_consensus_correct?: boolean | null
+          submission_hash?: string
+          tags?: string[] | null
+          tangkhul_text?: string
+          validated_at?: string | null
+          validator_id?: string | null
+        }
+        Relationships: []
+      }
+      translation_consensus: {
+        Row: {
+          agreement_score: number
+          created_at: string
+          english_text: string
+          id: string
+          is_golden_data: boolean | null
+          submission_count: number
+          tangkhul_text: string
+          updated_at: string
+        }
+        Insert: {
+          agreement_score?: number
+          created_at?: string
+          english_text: string
+          id?: string
+          is_golden_data?: boolean | null
+          submission_count?: number
+          tangkhul_text: string
+          updated_at?: string
+        }
+        Update: {
+          agreement_score?: number
+          created_at?: string
+          english_text?: string
+          id?: string
+          is_golden_data?: boolean | null
+          submission_count?: number
           tangkhul_text?: string
           updated_at?: string
         }
