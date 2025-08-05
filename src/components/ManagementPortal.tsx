@@ -272,9 +272,6 @@ const ManagementPortal = () => {
               <Shield className="w-4 h-4 mr-2" />
               {isAuthenticating ? 'Authenticating...' : 'Authenticate'}
             </Button>
-            <p className="text-xs text-gray-500 text-center">
-              Management password: 000000
-            </p>
           </CardContent>
         </Card>
       </div>
