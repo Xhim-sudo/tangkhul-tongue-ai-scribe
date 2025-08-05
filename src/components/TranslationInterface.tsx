@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowRightLeft, Copy, Volume2, ThumbsUp, ThumbsDown, MessageCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ArrowRightLeft, Copy, Volume2, ThumbsUp, ThumbsDown, MessageCircle, Plus, AlertCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useTranslation } from '@/hooks/useTranslation';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,6 +15,7 @@ const TranslationInterface = () => {
   const [sourceLanguage, setSourceLanguage] = useState("english");
   const [targetLanguage, setTargetLanguage] = useState("tangkhul");
   const [commonPhrases, setCommonPhrases] = useState([]);
+  const [translationResult, setTranslationResult] = useState<any>(null);
   const { translateText, isLoading } = useTranslation();
 
   // Load common phrases from database
@@ -46,10 +48,22 @@ const TranslationInterface = () => {
     try {
       const result = await translateText(sourceText, sourceLanguage, targetLanguage);
       setTranslatedText(result.translated_text);
+      setTranslationResult(result);
+      
+      let toastMessage = "Translation complete";
+      if (result.method === 'exact_match') {
+        toastMessage = "Perfect match found in our database!";
+      } else if (result.method === 'similarity_match') {
+        toastMessage = "Similar translation found in our database";
+      } else if (result.method === 'partial_match') {
+        toastMessage = "Partial translation available";
+      } else if (result.method === 'no_match') {
+        toastMessage = "Translation not available yet";
+      }
       
       toast({
-        title: "Translation complete",
-        description: "Your text has been translated using AI.",
+        title: toastMessage,
+        description: result.suggestion || "Translation based on our training data.",
       });
     } catch (error) {
       // Error handling is done in the hook
@@ -97,10 +111,10 @@ const TranslationInterface = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-orange-800">
             <MessageCircle className="w-5 h-5" />
-            AI-Powered Translation
+            Community-Powered Translation
           </CardTitle>
           <p className="text-sm text-gray-600">
-            Conversational AI that understands context and cultural nuances
+            Translations powered by community-verified Tangkhul language data
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -200,6 +214,98 @@ const TranslationInterface = () => {
               )}
             </div>
           </div>
+
+          {/* Translation Metadata */}
+          {translationResult && (
+            <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-orange-200">
+              <div className="flex items-center gap-2 mb-2">
+                <Badge variant={
+                  translationResult.method === 'exact_match' ? 'default' :
+                  translationResult.method === 'similarity_match' ? 'secondary' :
+                  translationResult.method === 'partial_match' ? 'outline' : 'destructive'
+                }>
+                  {translationResult.method === 'exact_match' && '✓ Exact Match'}
+                  {translationResult.method === 'similarity_match' && '≈ Similar Match'}
+                  {translationResult.method === 'partial_match' && '◐ Partial Match'}
+                  {translationResult.method === 'no_match' && '? No Match'}
+                </Badge>
+                <span className="text-sm text-gray-600">
+                  Confidence: {translationResult.confidence_score}%
+                </span>
+                {translationResult.coverage && (
+                  <span className="text-sm text-gray-600">
+                    Coverage: {translationResult.coverage}
+                  </span>
+                )}
+              </div>
+              
+              {translationResult.suggestion && (
+                <div className="flex items-start gap-2 mt-2 p-2 bg-blue-50 rounded border-l-4 border-blue-400">
+                  <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5" />
+                  <p className="text-sm text-blue-800">{translationResult.suggestion}</p>
+                </div>
+              )}
+
+              {/* Alternative Translations */}
+              {translationResult.alternatives && translationResult.alternatives.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-sm font-medium text-gray-700 mb-2">Alternative translations:</p>
+                  <div className="space-y-1">
+                    {translationResult.alternatives.map((alt: any, index: number) => (
+                      <div key={index} className="flex items-center justify-between p-2 bg-white rounded border">
+                        <span className="text-sm">{alt.text}</span>
+                        <Badge variant="outline" className="text-xs">
+                          {alt.confidence}% confidence
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Similar Phrases */}
+              {translationResult.similar_phrases && translationResult.similar_phrases.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-sm font-medium text-gray-700 mb-2">Similar phrases in our database:</p>
+                  <div className="space-y-2">
+                    {translationResult.similar_phrases.map((phrase: any, index: number) => (
+                      <div key={index} className="p-2 bg-white rounded border">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{phrase.source}</p>
+                            <p className="text-sm text-orange-600">{phrase.target}</p>
+                          </div>
+                          <Badge variant="outline" className="text-xs ml-2">
+                            {phrase.similarity}% similar
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Contribute Missing Translation */}
+              {translationResult.method === 'no_match' && (
+                <div className="mt-3">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-green-200 hover:bg-green-50"
+                    onClick={() => {
+                      toast({
+                        title: "Feature coming soon!",
+                        description: "Direct contribution from translation interface will be available soon.",
+                      });
+                    }}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Contribute This Translation
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
