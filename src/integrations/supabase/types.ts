@@ -294,13 +294,19 @@ export type Database = {
           context: string | null
           contributor_id: string
           created_at: string
+          difficulty_level: string | null
           english_text: string
+          grammatical_features: Json | null
           id: string
+          is_phrase: boolean | null
+          part_of_speech: string | null
           reviewer_id: string | null
           status: string | null
           tags: string[] | null
           tangkhul_text: string
           updated_at: string
+          usage_frequency: string | null
+          word_count: number | null
         }
         Insert: {
           category?: string | null
@@ -308,13 +314,19 @@ export type Database = {
           context?: string | null
           contributor_id: string
           created_at?: string
+          difficulty_level?: string | null
           english_text: string
+          grammatical_features?: Json | null
           id?: string
+          is_phrase?: boolean | null
+          part_of_speech?: string | null
           reviewer_id?: string | null
           status?: string | null
           tags?: string[] | null
           tangkhul_text: string
           updated_at?: string
+          usage_frequency?: string | null
+          word_count?: number | null
         }
         Update: {
           category?: string | null
@@ -322,13 +334,19 @@ export type Database = {
           context?: string | null
           contributor_id?: string
           created_at?: string
+          difficulty_level?: string | null
           english_text?: string
+          grammatical_features?: Json | null
           id?: string
+          is_phrase?: boolean | null
+          part_of_speech?: string | null
           reviewer_id?: string | null
           status?: string | null
           tags?: string[] | null
           tangkhul_text?: string
           updated_at?: string
+          usage_frequency?: string | null
+          word_count?: number | null
         }
         Relationships: []
       }
@@ -546,6 +564,10 @@ export type Database = {
     Functions: {
       calculate_contributor_accuracy: {
         Args: { contributor_uuid: string }
+        Returns: number
+      }
+      calculate_similarity: {
+        Args: { text1: string; text2: string }
         Returns: number
       }
       generate_staff_id: {

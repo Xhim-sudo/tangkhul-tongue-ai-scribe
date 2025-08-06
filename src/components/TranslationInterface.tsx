@@ -246,18 +246,61 @@ const TranslationInterface = () => {
                 </div>
               )}
 
-              {/* Alternative Translations */}
-              {translationResult.alternatives && translationResult.alternatives.length > 0 && (
+              {/* Enhanced Alternative Translations */}
+              {(translationResult.alternatives || translationResult.alternative_translations) && (
                 <div className="mt-3">
                   <p className="text-sm font-medium text-gray-700 mb-2">Alternative translations:</p>
                   <div className="space-y-1">
-                    {translationResult.alternatives.map((alt: any, index: number) => (
+                    {(translationResult.alternatives || translationResult.alternative_translations)?.map((alt: any, index: number) => (
                       <div key={index} className="flex items-center justify-between p-2 bg-white rounded border">
-                        <span className="text-sm">{alt.text}</span>
+                        <div className="flex-1">
+                          <span className="text-sm font-medium">{alt.text}</span>
+                          {alt.category && (
+                            <span className="text-xs bg-secondary/50 px-1 rounded ml-2">{alt.category}</span>
+                          )}
+                          {alt.part_of_speech && (
+                            <span className="text-xs bg-muted/50 px-1 rounded ml-1">{alt.part_of_speech}</span>
+                          )}
+                        </div>
                         <Badge variant="outline" className="text-xs">
                           {alt.confidence}% confidence
                         </Badge>
                       </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Translation Metadata */}
+              {translationResult?.metadata && (
+                <div className="mt-3 p-3 bg-muted/30 rounded-lg">
+                  <p className="text-sm font-medium text-gray-700 mb-2">Translation Details:</p>
+                  <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                    {translationResult.metadata.category && (
+                      <div>Category: <span className="font-medium">{translationResult.metadata.category}</span></div>
+                    )}
+                    {translationResult.metadata.part_of_speech && (
+                      <div>Type: <span className="font-medium">{translationResult.metadata.part_of_speech}</span></div>
+                    )}
+                    {translationResult.metadata.difficulty && (
+                      <div>Level: <span className="font-medium">{translationResult.metadata.difficulty}</span></div>
+                    )}
+                    {translationResult.metadata.frequency && (
+                      <div>Usage: <span className="font-medium">{translationResult.metadata.frequency}</span></div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Untranslated Words */}
+              {translationResult?.untranslated_words && translationResult.untranslated_words.length > 0 && (
+                <div className="mt-3 p-3 bg-warning/10 border border-warning/20 rounded-lg">
+                  <p className="text-sm font-medium mb-2 text-warning-foreground">Missing Translations:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {translationResult.untranslated_words.map((word: string, index: number) => (
+                      <span key={index} className="text-xs bg-warning/20 px-2 py-1 rounded">
+                        {word}
+                      </span>
                     ))}
                   </div>
                 </div>
