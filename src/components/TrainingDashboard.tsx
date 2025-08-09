@@ -87,40 +87,6 @@ const TrainingDashboard = () => {
         </Card>
       </div>
 
-      {/* Training Progress */}
-      <Card className="bg-white/70 backdrop-blur-sm border-orange-200">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-orange-800">
-            <TrendingUp className="w-5 h-5" />
-            Training Progress
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Dataset Completion</span>
-              <span>71.5%</span>
-            </div>
-            <Progress value={71.5} className="h-3" />
-          </div>
-          
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Verification Progress</span>
-              <span>85.2%</span>
-            </div>
-            <Progress value={85.2} className="h-3" />
-          </div>
-          
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Model Training Ready</span>
-              <span>68.9%</span>
-            </div>
-            <Progress value={68.9} className="h-3" />
-          </div>
-        </CardContent>
-      </Card>
 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Category Breakdown */}

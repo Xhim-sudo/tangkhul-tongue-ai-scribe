@@ -9,7 +9,8 @@ export const useWhatsApp = () => {
     phoneNumber: string,
     inviterName: string,
     role: string,
-    staffId?: string
+    staffId?: string,
+    pinCode?: string
   ) => {
     setIsSending(true);
     try {
@@ -17,14 +18,15 @@ export const useWhatsApp = () => {
 
 👋 Hi! ${inviterName} has invited you to contribute to our AI translation project as a ${role}.
 
-🆔 Your Staff ID: ${staffId || 'Will be provided'}
-📧 Use this Staff ID during registration
+🆔 Staff ID: ${staffId || 'Will be provided'}
+🔐 Temporary Password (4-digit): ${pinCode || '[PIN]'}
 
 🌐 To get started:
 1. Visit our platform
 2. Click "Sign Up"
-3. Enter your Staff ID: ${staffId || '[ID]'}
-4. Complete your registration
+3. Enter your Email + Staff ID
+4. Use the 4-digit password above
+5. After signup, you can login with Staff ID OR Email + this password
 
 Thank you for helping preserve and digitize the Tangkhul language! 🙏
 

@@ -144,6 +144,7 @@ const KnowledgeLogger = () => {
     category: string;
     context: string;
     tags: string;
+    partOfSpeech: string;
   }) => {
     if (!user) return;
 
@@ -184,26 +185,6 @@ const KnowledgeLogger = () => {
       {/* User Performance Dashboard */}
       <UserStats stats={userStats} />
 
-      {/* Accuracy Progress */}
-      <Card className="bg-white/70 backdrop-blur-sm border-orange-200">
-        <CardHeader>
-          <CardTitle className="text-orange-800">My Accuracy Progress</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Current Accuracy: {userStats.accuracy}%</span>
-              <span>Target: 99%</span>
-            </div>
-            <Progress value={userStats.accuracy} className="h-3" />
-            <p className="text-xs text-gray-600">
-              {userStats.accuracy >= 95 ? "Excellent! You're contributing high-quality data." :
-               userStats.accuracy >= 85 ? "Good work! Keep improving your accuracy." :
-               "Focus on quality translations to improve your accuracy."}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Training Form */}
       <TrainingForm onSubmit={handleTrainingSubmit} />

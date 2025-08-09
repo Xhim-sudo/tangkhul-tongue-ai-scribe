@@ -163,6 +163,7 @@ export type Database = {
           id: string
           invited_by: string
           phone_number: string | null
+          pin_code: string | null
           role: Database["public"]["Enums"]["app_role"]
           staff_id: string | null
           token: string
@@ -175,6 +176,7 @@ export type Database = {
           id?: string
           invited_by: string
           phone_number?: string | null
+          pin_code?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           staff_id?: string | null
           token: string
@@ -187,6 +189,7 @@ export type Database = {
           id?: string
           invited_by?: string
           phone_number?: string | null
+          pin_code?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           staff_id?: string | null
           token?: string
@@ -360,6 +363,7 @@ export type Database = {
           english_text: string
           id: string
           is_consensus_correct: boolean | null
+          part_of_speech: string | null
           submission_hash: string
           tags: string[] | null
           tangkhul_text: string
@@ -375,6 +379,7 @@ export type Database = {
           english_text: string
           id?: string
           is_consensus_correct?: boolean | null
+          part_of_speech?: string | null
           submission_hash: string
           tags?: string[] | null
           tangkhul_text: string
@@ -390,6 +395,7 @@ export type Database = {
           english_text?: string
           id?: string
           is_consensus_correct?: boolean | null
+          part_of_speech?: string | null
           submission_hash?: string
           tags?: string[] | null
           tangkhul_text?: string

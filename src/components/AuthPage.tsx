@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from '@/contexts/AuthContext';
 import { useError } from '@/contexts/ErrorContext';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Eye, EyeOff, User, Mail, Phone, Key } from 'lucide-react';
 
@@ -41,7 +42,18 @@ const AuthPage = () => {
 
     setIsLoading(true);
     try {
-      await signIn(loginEmail, loginPassword);
+      let emailToUse = loginEmail.trim();
+      if (!loginEmail.includes('@')) {
+        const { data, error } = await supabase.functions.invoke('resolve-staff-login', {
+          body: { staff_id: loginEmail.trim() }
+        });
+        if (error || !data?.email) {
+          throw new Error('No account found for this Staff ID');
+        }
+        emailToUse = data.email;
+      }
+
+      await signIn(emailToUse, loginPassword);
       toast({
         title: "Welcome back!",
         description: "You have been successfully logged in.",
@@ -113,13 +125,13 @@ const AuthPage = () => {
             <TabsContent value="login">
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="login-email">Email</Label>
+                  <Label htmlFor="login-identifier">Email or Staff ID</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <Input
-                      id="login-email"
-                      type="email"
-                      placeholder="Enter your email"
+                      id="login-identifier"
+                      type="text"
+                      placeholder="Enter your email or staff ID"
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
                       className="pl-10 border-orange-200 focus:border-orange-400"

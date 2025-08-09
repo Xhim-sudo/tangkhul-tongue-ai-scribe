@@ -69,8 +69,13 @@ const EnhancedUserManagement = () => {
     }
 
     try {
-      // Create invitation record with auto-generated staff ID
-      const { data: invitationData, error } = await supabase
+      // Generate a 4-digit PIN and unique Staff ID
+      const pinCode = Math.floor(1000 + Math.random() * 9000).toString();
+      const { data: staffGen, error: staffErr } = await (supabase as any).rpc('generate_staff_id');
+      if (staffErr || !staffGen) throw staffErr || new Error('Failed to generate Staff ID');
+
+      // Create invitation record with generated staff ID and PIN
+      const { data: invitationData, error } = await (supabase as any)
         .from('invitations')
         .insert({
           email: inviteEmail,
@@ -78,6 +83,8 @@ const EnhancedUserManagement = () => {
           role: inviteRole,
           invited_by: userProfile?.id,
           token: crypto.randomUUID(),
+          staff_id: staffGen as string,
+          pin_code: pinCode,
           expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
         })
         .select()
@@ -85,12 +92,13 @@ const EnhancedUserManagement = () => {
 
       if (error) throw error;
 
-      // Send WhatsApp invitation with staff ID
+      // Send WhatsApp invitation with staff ID and PIN
       await sendWhatsAppInvitation(
         invitePhone,
         userProfile?.full_name || 'Admin',
         inviteRole,
-        invitationData.staff_id // Pass the generated staff ID
+        invitationData.staff_id,
+        pinCode
       );
 
       toast({

@@ -14,6 +14,7 @@ interface TrainingFormProps {
     category: string;
     context: string;
     tags: string;
+    partOfSpeech: string;
   }) => void;
   isLoading?: boolean;
 }
@@ -24,6 +25,7 @@ const TrainingForm = ({ onSubmit, isLoading = false }: TrainingFormProps) => {
   const [category, setCategory] = useState("");
   const [context, setContext] = useState("");
   const [tags, setTags] = useState("");
+  const [partOfSpeech, setPartOfSpeech] = useState("");
   const [categories, setCategories] = useState<Array<{id: string, name: string}>>([]);
 
   // Load categories from database with real-time updates
@@ -88,7 +90,8 @@ const TrainingForm = ({ onSubmit, isLoading = false }: TrainingFormProps) => {
       tangkhulText,
       category: category || "general",
       context,
-      tags
+      tags,
+      partOfSpeech: partOfSpeech || 'unknown'
     });
 
     // Clear form
@@ -97,6 +100,7 @@ const TrainingForm = ({ onSubmit, isLoading = false }: TrainingFormProps) => {
     setCategory("");
     setContext("");
     setTags("");
+    setPartOfSpeech("");
   };
 
   return (
