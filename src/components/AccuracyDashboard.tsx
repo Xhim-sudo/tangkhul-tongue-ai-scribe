@@ -4,14 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Award, Download, RefreshCw } from "lucide-react";
-import { useDataExport } from '@/hooks/useDataExport';
+import { Award } from "lucide-react";
+
 import { supabase } from '@/integrations/supabase/client';
 import AccuracyHeader from './AccuracyHeader';
 import AccuracyStats from './AccuracyStats';
 
 const AccuracyDashboard = () => {
-  const { exportGoldenData, isExporting } = useDataExport();
+  
   const [accuracyStats, setAccuracyStats] = useState({
     overallAccuracy: 0,
     totalEntries: 0,
@@ -20,9 +20,11 @@ const AccuracyDashboard = () => {
     topContributors: [] as any[],
     categoryAccuracy: [] as any[]
   });
+  const [knowledgeEntries, setKnowledgeEntries] = useState<any[]>([]);
 
   useEffect(() => {
     loadAccuracyStats();
+    loadKnowledgeEntries();
   }, []);
 
   const loadAccuracyStats = async () => {
@@ -106,6 +108,19 @@ const AccuracyDashboard = () => {
     }
   };
 
+  const loadKnowledgeEntries = async () => {
+    try {
+      const { data } = await supabase
+        .from('training_submissions_log')
+        .select('english_text, tangkhul_text, category, created_at')
+        .order('created_at', { ascending: false })
+        .limit(25);
+      setKnowledgeEntries(data || []);
+    } catch (e) {
+      console.error('Failed to load knowledge entries:', e);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Main Accuracy Display */}
@@ -121,30 +136,28 @@ const AccuracyDashboard = () => {
         overallAccuracy={accuracyStats.overallAccuracy}
       />
 
-      {/* Management Actions */}
+      {/* Knowledge Base (View Only) */}
       <Card className="bg-white/70 backdrop-blur-sm border-orange-200">
         <CardHeader>
-          <CardTitle className="text-orange-800">Golden Dataset Management</CardTitle>
+          <CardTitle className="text-orange-800">Knowledge Base (Recent Submissions)</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4">
-            <Button 
-              onClick={() => exportGoldenData('json')}
-              disabled={isExporting}
-              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              {isExporting ? 'Exporting...' : 'Export Golden Dataset'}
-            </Button>
-            <Button 
-              onClick={refreshGoldenData}
-              variant="outline"
-              className="border-orange-200 hover:bg-orange-50"
-            >
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Refresh Golden Data
-            </Button>
-          </div>
+          {knowledgeEntries.length === 0 ? (
+            <p className="text-gray-600">No knowledge entries yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {knowledgeEntries.map((e, idx) => (
+                <div key={idx} className="p-3 bg-white/50 rounded-lg border border-orange-100">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">{e.english_text}</span>
+                    <Badge variant="outline" className="border-orange-200">{e.category || 'general'}</Badge>
+                  </div>
+                  <p className="text-sm text-gray-700 mt-1">→ {e.tangkhul_text}</p>
+                  <p className="text-xs text-gray-500 mt-1">{new Date(e.created_at).toLocaleString()}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 

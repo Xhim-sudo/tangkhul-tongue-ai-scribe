@@ -258,7 +258,73 @@ serve(async (req) => {
       );
     }
 
-    // Step 2: Try enhanced similarity-based matching with grammar awareness
+    // Step 2: Check community knowledge (consensus table) for exact phrase
+    try {
+      const consensusQuery = supabase
+        .from('translation_consensus')
+        .select('english_text, tangkhul_text, agreement_score')
+        .order('agreement_score', { ascending: false })
+        .limit(1);
+      const { data: consensusExact } = await (
+        sourceField === 'english_text'
+          ? consensusQuery.ilike('english_text', text)
+          : consensusQuery.ilike('tangkhul_text', text)
+      );
+
+      if (consensusExact && consensusExact.length > 0) {
+        const best = consensusExact[0];
+        const translated = sourceField === 'english_text' ? best.tangkhul_text : best.english_text;
+        const conf = Math.min(99, Math.max(75, best.agreement_score || 80));
+        return new Response(
+          JSON.stringify({
+            translated_text: translated,
+            confidence_score: conf,
+            method: 'consensus_exact',
+            message: 'Found exact match in community consensus',
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    } catch (_) { /* ignore */ }
+
+    // Step 3: Use most frequent mapping from recent submissions as fallback
+    try {
+      const subsQuery = supabase
+        .from('training_submissions_log')
+        .select('english_text, tangkhul_text')
+        .limit(500);
+      const { data: subs } = await (
+        sourceField === 'english_text'
+          ? subsQuery.ilike('english_text', text)
+          : subsQuery.ilike('tangkhul_text', text)
+      );
+
+      if (subs && subs.length > 0) {
+        const freq: Record<string, number> = {};
+        for (const row of subs) {
+          const candidate = sourceField === 'english_text' ? row.tangkhul_text : row.english_text;
+          if (!candidate) continue;
+          freq[candidate] = (freq[candidate] || 0) + 1;
+        }
+        const best = Object.entries(freq).sort((a, b) => b[1] - a[1])[0];
+        if (best) {
+          const [translated, count] = best;
+          const confidence = Math.min(85, Math.round((count / subs.length) * 80) + 5);
+          return new Response(
+            JSON.stringify({
+              translated_text: translated,
+              confidence_score: confidence,
+              method: 'community_frequency',
+              message: 'Used most frequent community submission',
+              metadata: { total_considered: subs.length, top_count: count }
+            }),
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      }
+    } catch (_) { /* ignore */ }
+
+    // Step 4: Try enhanced similarity-based matching with grammar awareness
     const similarMatches = findBestMatches(text, trainingData, sourceField, targetField, 0.6);
     
     if (similarMatches.length > 0) {

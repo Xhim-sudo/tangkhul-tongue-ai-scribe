@@ -5,7 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import UserStats from './training/UserStats';
+// import UserStats from './training/UserStats';
 import TrainingForm from './training/TrainingForm';
 import CommunityOverview from './training/CommunityOverview';
 import TrainingEntriesList from './training/TrainingEntriesList';
@@ -182,10 +182,6 @@ const KnowledgeLogger = () => {
 
   return (
     <div className="space-y-6">
-      {/* User Performance Dashboard */}
-      <UserStats stats={userStats} />
-
-
       {/* Training Form */}
       <TrainingForm onSubmit={handleTrainingSubmit} />
 

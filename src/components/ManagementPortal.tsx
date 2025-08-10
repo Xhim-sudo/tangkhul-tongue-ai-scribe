@@ -14,6 +14,7 @@ import { toast } from '@/hooks/use-toast';
 import SystemOverview from './SystemOverview';
 import CategoryManagement from './CategoryManagement';
 import TrainingDataManagement from './TrainingDataManagement';
+import EnhancedUserManagement from './EnhancedUserManagement';
 
 const ManagementPortal = () => {
   const { hasRole, userProfile } = useAuth();
@@ -285,6 +286,9 @@ const ManagementPortal = () => {
 
       {/* Category Management */}
       <CategoryManagement />
+
+      {/* Invitations & User Management */}
+      <EnhancedUserManagement />
 
       {/* Management Actions */}
       <Card className="bg-white/70 backdrop-blur-sm border-orange-200">
