@@ -6,6 +6,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Save } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Input } from "@/components/ui/input";
+import GrammarFeaturesInput from "./GrammarFeaturesInput";
+import { toast } from "@/hooks/use-toast";
 
 interface TrainingFormProps {
   onSubmit: (data: {
@@ -26,6 +29,7 @@ const TrainingForm = ({ onSubmit, isLoading = false }: TrainingFormProps) => {
   const [context, setContext] = useState("");
   const [tags, setTags] = useState("");
   const [partOfSpeech, setPartOfSpeech] = useState("");
+  const [grammaticalFeatures, setGrammaticalFeatures] = useState<Record<string, any>>({});
   const [categories, setCategories] = useState<Array<{id: string, name: string}>>([]);
 
   // Load categories from database with real-time updates
@@ -82,9 +86,10 @@ const TrainingForm = ({ onSubmit, isLoading = false }: TrainingFormProps) => {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!englishText.trim() || !tangkhulText.trim()) return;
-    
+
+    // 1) Call existing onSubmit to preserve current behavior
     onSubmit({
       englishText,
       tangkhulText,
@@ -94,6 +99,46 @@ const TrainingForm = ({ onSubmit, isLoading = false }: TrainingFormProps) => {
       partOfSpeech: partOfSpeech || 'unknown'
     });
 
+    // 2) Also log to Knowledge Log (training_submissions_log)
+    try {
+      const { data: userRes } = await supabase.auth.getUser();
+      const contributorId = userRes?.user?.id;
+      if (!contributorId) {
+        console.warn('User not authenticated, skipping knowledge log insert.');
+      } else {
+        const tagsArray = tags
+          .split(',')
+          .map(t => t.trim())
+          .filter(Boolean);
+
+        // Simple non-cryptographic hash string to satisfy NOT NULL requirement
+        const submissionHash = `${englishText.trim().toLowerCase()}|${tangkhulText.trim().toLowerCase()}|${(category || 'general').trim().toLowerCase()}|${Date.now()}`;
+
+        const { error: logErr } = await (supabase as any)
+          .from('training_submissions_log')
+          .insert({
+            contributor_id: contributorId,
+            english_text: englishText,
+            tangkhul_text: tangkhulText,
+            category: category || 'general',
+            context: context || null,
+            tags: tagsArray.length ? tagsArray : null,
+            part_of_speech: partOfSpeech || 'unknown',
+            grammatical_features: grammaticalFeatures || {},
+            submission_hash: submissionHash,
+            confidence_score: 85
+          });
+
+        if (logErr) {
+          console.error('Knowledge log insert failed:', logErr);
+        } else {
+          console.log('Submission saved to knowledge log');
+        }
+      }
+    } catch (e) {
+      console.error('Unexpected error logging submission:', e);
+    }
+
     // Clear form
     setEnglishText("");
     setTangkhulText("");
@@ -101,6 +146,12 @@ const TrainingForm = ({ onSubmit, isLoading = false }: TrainingFormProps) => {
     setContext("");
     setTags("");
     setPartOfSpeech("");
+    setGrammaticalFeatures({});
+
+    toast({
+      title: "Submitted",
+      description: "Your contribution has been submitted and logged to the knowledge base.",
+    });
   };
 
   return (
@@ -160,12 +211,40 @@ const TrainingForm = ({ onSubmit, isLoading = false }: TrainingFormProps) => {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Tags</label>
-            <Textarea
+            <label className="text-sm font-medium">Tags (comma separated)</label>
+            <Input
               placeholder="formal, casual, question"
               value={tags}
               onChange={(e) => setTags(e.target.value)}
-              className="border-orange-200 focus:border-orange-400 h-10"
+              className="border-orange-200 focus:border-orange-400"
+            />
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Part of Speech</label>
+            <Select value={partOfSpeech} onValueChange={setPartOfSpeech}>
+              <SelectTrigger className="border-orange-200">
+                <SelectValue placeholder="Select type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="verb">Verb</SelectItem>
+                <SelectItem value="noun">Noun</SelectItem>
+                <SelectItem value="adjective">Adjective</SelectItem>
+                <SelectItem value="adverb">Adverb</SelectItem>
+                <SelectItem value="phrase">Phrase</SelectItem>
+                <SelectItem value="sentence">Sentence</SelectItem>
+                <SelectItem value="unknown">Unknown</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="md:col-span-2 space-y-2">
+            <label className="text-sm font-medium">Grammar usage and functions</label>
+            <GrammarFeaturesInput
+              partOfSpeech={partOfSpeech || 'unknown'}
+              value={grammaticalFeatures}
+              onChange={setGrammaticalFeatures}
             />
           </div>
         </div>
@@ -189,3 +268,4 @@ const TrainingForm = ({ onSubmit, isLoading = false }: TrainingFormProps) => {
 };
 
 export default TrainingForm;
+

@@ -361,6 +361,7 @@ export type Database = {
           contributor_id: string
           created_at: string
           english_text: string
+          grammatical_features: Json
           id: string
           is_consensus_correct: boolean | null
           part_of_speech: string | null
@@ -377,6 +378,7 @@ export type Database = {
           contributor_id: string
           created_at?: string
           english_text: string
+          grammatical_features?: Json
           id?: string
           is_consensus_correct?: boolean | null
           part_of_speech?: string | null
@@ -393,6 +395,7 @@ export type Database = {
           contributor_id?: string
           created_at?: string
           english_text?: string
+          grammatical_features?: Json
           id?: string
           is_consensus_correct?: boolean | null
           part_of_speech?: string | null
