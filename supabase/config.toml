@@ -5,4 +5,7 @@ project_id = "xaboacjkzhmzzsinxwcp"
 [functions.resolve-staff-login]
 verify_jwt = false
 
+[functions.translate-text-v2]
+verify_jwt = false
+
 # keep existing functions working (translate-text uses default verification)

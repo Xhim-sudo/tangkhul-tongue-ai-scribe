@@ -18,6 +18,15 @@ export default {
 			}
 		},
 		extend: {
+			spacing: {
+				'safe': 'env(safe-area-inset-bottom)',
+			},
+			minHeight: {
+				'touch': '44px',
+			},
+			minWidth: {
+				'touch': '44px',
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',

@@ -9,13 +9,31 @@ export const useTranslation = () => {
   const translateText = async (text: string, fromLang: string, toLang: string) => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('translate-text', {
-        body: { 
-          text, 
-          source_language: fromLang,
-          target_language: toLang 
-        }
-      });
+      // Try v2 endpoint first (enhanced algorithm)
+      let data, error;
+      try {
+        const result = await supabase.functions.invoke('translate-text-v2', {
+          body: { 
+            text, 
+            source_language: fromLang,
+            target_language: toLang 
+          }
+        });
+        data = result.data;
+        error = result.error;
+      } catch (v2Error) {
+        // Fallback to v1 if v2 fails
+        console.warn('V2 endpoint failed, falling back to v1:', v2Error);
+        const result = await supabase.functions.invoke('translate-text', {
+          body: { 
+            text, 
+            source_language: fromLang,
+            target_language: toLang 
+          }
+        });
+        data = result.data;
+        error = result.error;
+      }
 
       if (error) throw error;
 

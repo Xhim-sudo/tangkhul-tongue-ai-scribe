@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import Navigation from "@/components/Navigation";
@@ -8,11 +7,18 @@ import KnowledgeLogger from "@/components/KnowledgeLogger";
 import AccuracyDashboard from "@/components/AccuracyDashboard";
 import ManagementPortal from "@/components/ManagementPortal";
 import { useError } from "@/contexts/ErrorContext";
+import { useIsMobileView } from "@/lib/breakpoints";
+import BottomNav from "@/components/mobile/BottomNav";
+import MobileHeader from "@/components/mobile/MobileHeader";
+import MobileRouter from "@/components/mobile/MobileRouter";
+import TrainingScreenMobile from "@/components/mobile/TrainingScreenMobile";
+import ProfileScreenMobile from "@/components/mobile/ProfileScreenMobile";
 
 const Index = () => {
   const { hasRole } = useAuth();
   const { logError } = useError();
   const [activeTab, setActiveTab] = useState("translate");
+  const isMobile = useIsMobileView();
 
   const renderContent = () => {
     const content = (() => {
@@ -42,6 +48,30 @@ const Index = () => {
     );
   };
 
+  // Mobile layout
+  if (isMobile) {
+    const getHeaderTitle = () => {
+      switch (activeTab) {
+        case "translate": return "Translate";
+        case "training": return "Contribute";
+        case "accuracy": return "Accuracy";
+        case "management": return "Profile";
+        default: return "Tangkhul Translator";
+      }
+    };
+
+    return (
+      <div className="min-h-screen bg-background">
+        <MobileHeader title={getHeaderTitle()} showSearch />
+        <MobileRouter activeTab={activeTab}>
+          {renderContent()}
+        </MobileRouter>
+        <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+      </div>
+    );
+  }
+
+  // Desktop layout
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50">
       <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
