@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { staticSeedLookup } from '@/lib/staticSeed';
 
 export const useTranslation = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -22,17 +23,34 @@ export const useTranslation = () => {
         data = result.data;
         error = result.error;
       } catch (v2Error) {
-        // Fallback to v1 if v2 fails
         console.warn('V2 endpoint failed, falling back to v1:', v2Error);
-        const result = await supabase.functions.invoke('translate-text', {
-          body: { 
-            text, 
-            source_language: fromLang,
-            target_language: toLang 
+        try {
+          // Fallback to v1 if v2 fails
+          const result = await supabase.functions.invoke('translate-text', {
+            body: { 
+              text, 
+              source_language: fromLang,
+              target_language: toLang 
+            }
+          });
+          data = result.data;
+          error = result.error;
+        } catch (v1Error) {
+          console.warn('V1 endpoint failed, using static fallback:', v1Error);
+          // Final fallback to static seed data
+          const staticTranslation = staticSeedLookup(text);
+          if (staticTranslation) {
+            data = {
+              translated_text: staticTranslation,
+              confidence_score: 70,
+              method: 'static_fallback',
+              metadata: { offline: true }
+            };
+            error = null;
+          } else {
+            throw new Error('Translation unavailable offline');
           }
-        });
-        data = result.data;
-        error = result.error;
+        }
       }
 
       if (error) throw error;
