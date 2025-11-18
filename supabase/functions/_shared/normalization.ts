@@ -1,5 +1,3 @@
-import { createHash } from "https://deno.land/std@0.168.0/hash/mod.ts";
-
 /**
  * Normalize text for matching and comparison
  * - Lowercase
@@ -27,12 +25,14 @@ export function tokenize(text: string): string[] {
 }
 
 /**
- * Generate SHA-256 hash for cache keys
+ * Generate SHA-256 hash for cache keys using Web Crypto API
  */
-export function generateHash(text: string): string {
-  const hash = createHash("sha256");
-  hash.update(text);
-  return hash.toString();
+export async function generateHash(text: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(text);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 /**

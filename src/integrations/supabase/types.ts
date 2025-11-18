@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.12 (cd3cf9e)"
@@ -41,6 +41,36 @@ export type Database = {
           last_calculated?: string
           total_contributions?: number | null
           validated_contributions?: number | null
+        }
+        Relationships: []
+      }
+      canonical_texts: {
+        Row: {
+          created_at: string | null
+          id: string
+          language: string
+          normalized_text: string
+          original_text: string
+          token_vector: unknown
+          trigram_index: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          language: string
+          normalized_text: string
+          original_text: string
+          token_vector?: unknown
+          trigram_index?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          language?: string
+          normalized_text?: string
+          original_text?: string
+          token_vector?: unknown
+          trigram_index?: string | null
         }
         Relationships: []
       }
@@ -292,6 +322,8 @@ export type Database = {
       }
       training_entries: {
         Row: {
+          canonical_english_id: string | null
+          canonical_tangkhul_id: string | null
           category: string | null
           confidence_score: number | null
           context: string | null
@@ -302,16 +334,21 @@ export type Database = {
           grammatical_features: Json | null
           id: string
           is_phrase: boolean | null
+          normalized_english: string | null
+          normalized_tangkhul: string | null
           part_of_speech: string | null
           reviewer_id: string | null
           status: string | null
           tags: string[] | null
           tangkhul_text: string
+          token_coverage: number | null
           updated_at: string
           usage_frequency: string | null
           word_count: number | null
         }
         Insert: {
+          canonical_english_id?: string | null
+          canonical_tangkhul_id?: string | null
           category?: string | null
           confidence_score?: number | null
           context?: string | null
@@ -322,16 +359,21 @@ export type Database = {
           grammatical_features?: Json | null
           id?: string
           is_phrase?: boolean | null
+          normalized_english?: string | null
+          normalized_tangkhul?: string | null
           part_of_speech?: string | null
           reviewer_id?: string | null
           status?: string | null
           tags?: string[] | null
           tangkhul_text: string
+          token_coverage?: number | null
           updated_at?: string
           usage_frequency?: string | null
           word_count?: number | null
         }
         Update: {
+          canonical_english_id?: string | null
+          canonical_tangkhul_id?: string | null
           category?: string | null
           confidence_score?: number | null
           context?: string | null
@@ -342,16 +384,34 @@ export type Database = {
           grammatical_features?: Json | null
           id?: string
           is_phrase?: boolean | null
+          normalized_english?: string | null
+          normalized_tangkhul?: string | null
           part_of_speech?: string | null
           reviewer_id?: string | null
           status?: string | null
           tags?: string[] | null
           tangkhul_text?: string
+          token_coverage?: number | null
           updated_at?: string
           usage_frequency?: string | null
           word_count?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "training_entries_canonical_english_id_fkey"
+            columns: ["canonical_english_id"]
+            isOneToOne: false
+            referencedRelation: "canonical_texts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_entries_canonical_tangkhul_id_fkey"
+            columns: ["canonical_tangkhul_id"]
+            isOneToOne: false
+            referencedRelation: "canonical_texts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       training_submissions_log: {
         Row: {
@@ -407,36 +467,132 @@ export type Database = {
         }
         Relationships: []
       }
+      translation_analytics: {
+        Row: {
+          cached: boolean | null
+          confidence_score: number | null
+          created_at: string | null
+          id: string
+          query_text: string
+          response_time_ms: number | null
+          result_method: string | null
+          source_language: string
+          target_language: string
+          user_id: string | null
+        }
+        Insert: {
+          cached?: boolean | null
+          confidence_score?: number | null
+          created_at?: string | null
+          id?: string
+          query_text: string
+          response_time_ms?: number | null
+          result_method?: string | null
+          source_language: string
+          target_language: string
+          user_id?: string | null
+        }
+        Update: {
+          cached?: boolean | null
+          confidence_score?: number | null
+          created_at?: string | null
+          id?: string
+          query_text?: string
+          response_time_ms?: number | null
+          result_method?: string | null
+          source_language?: string
+          target_language?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      translation_cache: {
+        Row: {
+          confidence_score: number
+          created_at: string | null
+          hit_count: number | null
+          id: string
+          last_accessed: string | null
+          metadata: Json | null
+          method: string
+          source_language: string
+          source_text_hash: string
+          target_language: string
+          translated_text: string
+        }
+        Insert: {
+          confidence_score: number
+          created_at?: string | null
+          hit_count?: number | null
+          id?: string
+          last_accessed?: string | null
+          metadata?: Json | null
+          method: string
+          source_language: string
+          source_text_hash: string
+          target_language: string
+          translated_text: string
+        }
+        Update: {
+          confidence_score?: number
+          created_at?: string | null
+          hit_count?: number | null
+          id?: string
+          last_accessed?: string | null
+          metadata?: Json | null
+          method?: string
+          source_language?: string
+          source_text_hash?: string
+          target_language?: string
+          translated_text?: string
+        }
+        Relationships: []
+      }
       translation_consensus: {
         Row: {
           agreement_score: number
+          confidence_band: string | null
+          contributor_votes: number | null
           created_at: string
           english_text: string
+          expert_votes: number | null
           id: string
           is_golden_data: boolean | null
+          reviewer_votes: number | null
           submission_count: number
           tangkhul_text: string
           updated_at: string
+          weighted_agreement_score: number | null
         }
         Insert: {
           agreement_score?: number
+          confidence_band?: string | null
+          contributor_votes?: number | null
           created_at?: string
           english_text: string
+          expert_votes?: number | null
           id?: string
           is_golden_data?: boolean | null
+          reviewer_votes?: number | null
           submission_count?: number
           tangkhul_text: string
           updated_at?: string
+          weighted_agreement_score?: number | null
         }
         Update: {
           agreement_score?: number
+          confidence_band?: string | null
+          contributor_votes?: number | null
           created_at?: string
           english_text?: string
+          expert_votes?: number | null
           id?: string
           is_golden_data?: boolean | null
+          reviewer_votes?: number | null
           submission_count?: number
           tangkhul_text?: string
           updated_at?: string
+          weighted_agreement_score?: number | null
         }
         Relationships: []
       }
@@ -579,21 +735,17 @@ export type Database = {
         Args: { text1: string; text2: string }
         Returns: number
       }
-      generate_staff_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      generate_staff_id: { Args: never; Returns: string }
       has_role: {
         Args: {
-          _user_id: string
           _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
         }
         Returns: boolean
       }
-      mark_golden_data: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
+      mark_golden_data: { Args: never; Returns: number }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       app_role: "admin" | "expert" | "reviewer" | "contributor"
