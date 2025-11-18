@@ -27,7 +27,7 @@ export async function findTranslation(
   targetLang: string
 ): Promise<TranslationResult> {
   const normalizedSource = normalizeText(sourceText);
-  const sourceHash = generateHash(normalizedSource);
+  const sourceHash = await generateHash(normalizedSource);
 
   // Step 1: Check cache
   const cacheResult = await checkCache(supabaseClient, sourceHash, sourceLang, targetLang);
