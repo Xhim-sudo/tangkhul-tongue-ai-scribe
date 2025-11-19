@@ -735,6 +735,14 @@ export type Database = {
         Args: { text1: string; text2: string }
         Returns: number
       }
+      create_demo_profile: {
+        Args: {
+          p_email: string
+          p_full_name: string
+          p_role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: string
+      }
       generate_staff_id: { Args: never; Returns: string }
       has_role: {
         Args: {
