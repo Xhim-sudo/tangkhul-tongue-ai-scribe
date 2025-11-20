@@ -6,6 +6,8 @@ import TranslationInterface from "@/components/TranslationInterface";
 import KnowledgeLogger from "@/components/KnowledgeLogger";
 import AccuracyDashboard from "@/components/AccuracyDashboard";
 import ManagementPortal from "@/components/ManagementPortal";
+import ContributorDashboard from "@/components/ContributorDashboard";
+import AccuracyChecker from "@/components/AccuracyChecker";
 import { useError } from "@/contexts/ErrorContext";
 import { useIsMobileView } from "@/lib/breakpoints";
 import BottomNav from "@/components/mobile/BottomNav";
@@ -27,7 +29,12 @@ const Index = () => {
           return <TranslationInterface />;
         case "training":
           return <KnowledgeLogger />;
+        case "contributor":
+          return <ContributorDashboard />;
         case "accuracy":
+          return hasRole('admin') || hasRole('expert') || hasRole('reviewer') ? 
+            <AccuracyChecker /> : <div>Access denied</div>;
+        case "dashboard":
           return hasRole('admin') || hasRole('expert') || hasRole('reviewer') ? 
             <AccuracyDashboard /> : <div>Access denied</div>;
         case "management":
@@ -54,8 +61,10 @@ const Index = () => {
       switch (activeTab) {
         case "translate": return "Translate";
         case "training": return "Contribute";
-        case "accuracy": return "Accuracy";
-        case "management": return "Profile";
+        case "contributor": return "My Stats";
+        case "accuracy": return "Accuracy Check";
+        case "dashboard": return "Dashboard";
+        case "management": return "Management";
         default: return "Tangkhul Translator";
       }
     };
