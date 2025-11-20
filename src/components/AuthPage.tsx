@@ -107,13 +107,24 @@ const AuthPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-white/80 backdrop-blur-sm border-orange-200">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-orange-800">
+    <div className="min-h-screen gradient-primary flex items-center justify-center p-4 md:p-6">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-primary-glow/20 rounded-full blur-3xl animate-bounce-subtle" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blur-3xl animate-bounce-subtle" style={{ animationDelay: '1s' }} />
+      </div>
+
+      <Card className="w-full max-w-md glass shadow-extra-large border-border/50 backdrop-blur-xl relative z-10 animate-scale-in">
+        <CardHeader className="text-center space-y-2 pb-8">
+          <div className="flex justify-center mb-4">
+            <div className="w-16 h-16 gradient-primary rounded-2xl flex items-center justify-center shadow-glow-primary transform hover:scale-110 transition-transform duration-300">
+              <span className="text-white font-bold text-3xl">T</span>
+            </div>
+          </div>
+          <CardTitle className="text-3xl font-bold text-gradient-primary">
             Tangkhul AI Scribe
           </CardTitle>
-          <p className="text-gray-600">Join our language preservation project</p>
+          <p className="text-muted-foreground text-sm">Preserving language through AI innovation</p>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="login" className="w-full">
