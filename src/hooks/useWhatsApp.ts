@@ -38,8 +38,7 @@ Tangkhul AI Team`;
         .from('whatsapp_logs')
         .insert({
           recipient_phone: phoneNumber,
-          message_type: 'invitation',
-          message_content: message,
+          message_text: message,
           status: 'sent'
         });
 
@@ -83,8 +82,7 @@ Thank you for your interest in our project.`;
         .from('whatsapp_logs')
         .insert({
           recipient_phone: phoneNumber,
-          message_type: 'approval',
-          message_content: message,
+          message_text: message,
           status: 'sent'
         });
 

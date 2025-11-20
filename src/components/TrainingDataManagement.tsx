@@ -13,19 +13,17 @@ interface TrainingSubmission {
   id: string;
   english_text: string;
   tangkhul_text: string;
-  category: string;
-  context?: string;
-  tags?: string[];
+  category_id: string | null;
+  category?: string;
   contributor_id: string;
   contributor_name?: string;
   contributor_email?: string;
-  submission_hash: string;
-  is_consensus_correct?: boolean;
-  confidence_score: number;
+  grammar_features?: any;
+  linguistic_notes?: string | null;
+  is_golden_data?: boolean;
   created_at: string;
   agreement_score?: number;
   submission_count?: number;
-  is_golden_data?: boolean;
 }
 
 const TrainingDataManagement: React.FC = () => {
@@ -127,7 +125,6 @@ const TrainingDataManagement: React.FC = () => {
       const { data, error } = await supabase
         .from('training_categories')
         .select('name')
-        .eq('is_active', true)
         .order('name');
 
       if (error) throw error;
@@ -312,22 +309,20 @@ const TrainingDataManagement: React.FC = () => {
                   </div>
                 </div>
 
-                {submission.context && (
+                {submission.linguistic_notes && (
                   <div className="mb-3">
-                    <div className="font-medium text-sm text-muted-foreground mb-1">Context</div>
-                    <div className="text-sm">{submission.context}</div>
+                    <div className="font-medium text-sm text-muted-foreground mb-1">Linguistic Notes</div>
+                    <div className="text-sm">{submission.linguistic_notes}</div>
                   </div>
                 )}
 
-                {submission.tags && submission.tags.length > 0 && (
+                {submission.grammar_features && (
                   <div className="mb-3">
-                    <div className="font-medium text-sm text-muted-foreground mb-1">Tags</div>
-                    <div className="flex flex-wrap gap-1">
-                      {submission.tags.map((tag, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
+                    <div className="font-medium text-sm text-muted-foreground mb-1">Grammar Features</div>
+                    <div className="text-sm">
+                      <pre className="text-xs bg-muted p-2 rounded">
+                        {JSON.stringify(submission.grammar_features, null, 2)}
+                      </pre>
                     </div>
                   </div>
                 )}
@@ -338,7 +333,12 @@ const TrainingDataManagement: React.FC = () => {
                     {submission.contributor_email && ` (${submission.contributor_email})`}
                   </div>
                   <div className="flex items-center gap-2">
-                    Confidence: {submission.confidence_score}%
+                    {submission.is_golden_data && (
+                      <Badge variant="default" className="text-xs">Golden Data</Badge>
+                    )}
+                    {submission.agreement_score !== undefined && (
+                      <span>Agreement: {(submission.agreement_score * 100).toFixed(1)}%</span>
+                    )}
                   </div>
                 </div>
               </CardContent>

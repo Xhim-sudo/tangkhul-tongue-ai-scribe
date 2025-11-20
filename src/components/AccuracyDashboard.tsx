@@ -36,7 +36,7 @@ const AccuracyDashboard = () => {
 
       // Get golden data count
       const { data: goldenData } = await supabase
-        .from('contributor_datasets')
+        .from('training_entries')
         .select('id')
         .eq('is_golden_data', true);
 
@@ -48,18 +48,14 @@ const AccuracyDashboard = () => {
       // Get top contributors
       const { data: topContributors } = await supabase
         .from('accuracy_metrics')
-        .select(`
-          *,
-          profiles:contributor_id(full_name, email)
-        `)
-        .order('accuracy_percentage', { ascending: false })
+        .select('contributor_id, score, metric_type')
+        .order('score', { ascending: false })
         .limit(5);
 
       // Get category accuracy
       const { data: categoryData } = await supabase
         .from('training_entries')
-        .select('category, status')
-        .eq('status', 'approved');
+        .select('category_id, is_golden_data');
 
       // Calculate category accuracy
       const categoryStats = categoryData?.reduce((acc: any, entry: any) => {
