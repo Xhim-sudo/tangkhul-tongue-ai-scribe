@@ -42,19 +42,31 @@ const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange }) => {
     },
     {
       id: 'training',
-      label: 'Training Data',
+      label: 'Contribute',
       icon: Database,
       roles: ['admin', 'expert', 'reviewer', 'contributor']
     },
     {
+      id: 'contributor',
+      label: 'My Stats',
+      icon: User,
+      roles: ['admin', 'expert', 'reviewer', 'contributor']
+    },
+    {
       id: 'accuracy',
-      label: 'Accuracy Dashboard',
+      label: 'Accuracy Check',
       icon: BarChart3,
       roles: ['admin', 'expert', 'reviewer']
     },
     {
+      id: 'dashboard',
+      label: 'Dashboard',
+      icon: Shield,
+      roles: ['admin', 'expert', 'reviewer']
+    },
+    {
       id: 'management',
-      label: 'Management Portal',
+      label: 'Management',
       icon: Shield,
       roles: ['admin']
     }
