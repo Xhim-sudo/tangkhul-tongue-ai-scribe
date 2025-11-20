@@ -138,7 +138,7 @@ const ManagementPortal = () => {
         .select('id');
 
       const { data: goldenData } = await supabase
-        .from('contributor_datasets')
+        .from('training_entries')
         .select('id')
         .eq('is_golden_data', true);
 

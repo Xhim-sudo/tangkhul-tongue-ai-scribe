@@ -68,20 +68,16 @@ export const useDataExport = () => {
     setIsExporting(true);
     try {
       const { data: goldenData } = await supabase
-        .from('contributor_datasets')
-        .select(`
-          *,
-          profiles:contributor_id(full_name, email)
-        `)
+        .from('training_entries')
+        .select('id, english_text, tangkhul_text, contributor_id')
         .eq('is_golden_data', true)
-        .order('accuracy_score', { ascending: false });
+        .order('confidence_score', { ascending: false });
 
       const exportData = {
         type: 'golden_dataset',
         entries: goldenData || [],
         exported_at: new Date().toISOString(),
-        total_entries: goldenData?.length || 0,
-        average_accuracy: goldenData?.reduce((sum, entry) => sum + entry.accuracy_score, 0) / (goldenData?.length || 1)
+        total_entries: goldenData?.length || 0
       };
 
       // Log the export
