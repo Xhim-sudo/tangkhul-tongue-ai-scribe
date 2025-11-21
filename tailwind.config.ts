@@ -36,11 +36,13 @@ export default {
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
 					foreground: 'hsl(var(--primary-foreground))',
-					glow: 'hsl(var(--primary-glow))'
+					glow: 'hsl(var(--primary-glow))',
+					dark: 'hsl(var(--primary-dark))'
 				},
 				secondary: {
 					DEFAULT: 'hsl(var(--secondary))',
-					foreground: 'hsl(var(--secondary-foreground))'
+					foreground: 'hsl(var(--secondary-foreground))',
+					dark: 'hsl(var(--secondary-dark))'
 				},
 				destructive: {
 					DEFAULT: 'hsl(var(--destructive))',
@@ -48,7 +50,12 @@ export default {
 				},
 				success: {
 					DEFAULT: 'hsl(var(--success))',
-					foreground: 'hsl(var(--success-foreground))'
+					foreground: 'hsl(var(--success-foreground))',
+					dark: 'hsl(var(--success-dark))'
+				},
+				surface: {
+					DEFAULT: 'hsl(var(--surface))',
+					dark: 'hsl(var(--surface-dark))'
 				},
 				muted: {
 					DEFAULT: 'hsl(var(--muted))',
@@ -56,7 +63,8 @@ export default {
 				},
 				accent: {
 					DEFAULT: 'hsl(var(--accent))',
-					foreground: 'hsl(var(--accent-foreground))'
+					foreground: 'hsl(var(--accent-foreground))',
+					dark: 'hsl(var(--accent-dark))'
 				},
 				popover: {
 					DEFAULT: 'hsl(var(--popover))',

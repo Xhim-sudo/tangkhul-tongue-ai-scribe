@@ -11,6 +11,9 @@ import AccuracyChecker from "@/components/AccuracyChecker";
 import TranslationAnalytics from "@/components/TranslationAnalytics";
 import Leaderboard from "@/components/Leaderboard";
 import ReviewerWorkflow from "@/components/ReviewerWorkflow";
+import AdminPanel from "@/components/AdminPanel";
+import ProfilePage from "@/components/ProfilePage";
+import NotificationsPanel from "@/components/NotificationsPanel";
 import { useError } from "@/contexts/ErrorContext";
 import { useIsMobileView } from "@/lib/breakpoints";
 import BottomNav from "@/components/mobile/BottomNav";
@@ -38,6 +41,10 @@ const Index = () => {
           return <AccuracyChecker />;
         case "leaderboard":
           return <Leaderboard />;
+        case "profile":
+          return <ProfilePage />;
+        case "notifications":
+          return <NotificationsPanel />;
         case "analytics":
           return hasRole('admin') || hasRole('expert') || hasRole('reviewer') ? 
             <TranslationAnalytics /> : <div>Access denied</div>;
@@ -47,6 +54,9 @@ const Index = () => {
         case "dashboard":
           return hasRole('admin') || hasRole('expert') || hasRole('reviewer') ? 
             <AccuracyDashboard /> : <div>Access denied</div>;
+        case "admin":
+          return hasRole('admin') ? 
+            <AdminPanel /> : <div>Access denied</div>;
         case "management":
           return hasRole('admin') ? 
             <ManagementPortal /> : <div>Access denied</div>;
@@ -74,9 +84,12 @@ const Index = () => {
         case "contributor": return "My Stats";
         case "accuracy": return "Accuracy Check";
         case "leaderboard": return "Leaderboard";
+        case "profile": return "Profile";
+        case "notifications": return "Notifications";
         case "analytics": return "Analytics";
         case "review": return "Review Submissions";
         case "dashboard": return "Dashboard";
+        case "admin": return "Admin Panel";
         case "management": return "Management";
         default: return "Tangkhul Translator";
       }

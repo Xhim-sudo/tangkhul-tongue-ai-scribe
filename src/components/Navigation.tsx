@@ -14,7 +14,8 @@ import {
   Trophy,
   CheckSquare,
   Menu,
-  X
+  X,
+  Bell
 } from "lucide-react";
 import { useAuth } from '@/contexts/AuthContext';
 import { useState } from 'react';
@@ -86,8 +87,14 @@ const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange }) => {
       roles: ['admin', 'expert', 'reviewer']
     },
     {
+      id: 'admin',
+      label: 'Admin Panel',
+      icon: Shield,
+      roles: ['admin']
+    },
+    {
       id: 'management',
-      label: 'Management',
+      label: 'Old Management',
       icon: Shield,
       roles: ['admin']
     }
@@ -137,6 +144,16 @@ const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange }) => {
 
           {/* User Menu */}
           <div className="flex items-center space-x-4">
+            {/* Notifications Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onTabChange('notifications')}
+              className="relative text-gray-600 hover:text-gray-900"
+            >
+              <Bell className="w-5 h-5" />
+            </Button>
+
             <div className="hidden sm:flex items-center space-x-3">
               <div className="text-right">
                 <p className="text-sm font-medium text-gray-900">

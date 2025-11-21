@@ -11,7 +11,7 @@ const navItems = [
   { id: "training", icon: BookOpen, label: "Contribute" },
   { id: "leaderboard", icon: Trophy, label: "Ranks" },
   { id: "contributor", icon: Award, label: "Stats" },
-  { id: "management", icon: User, label: "Profile" },
+  { id: "profile", icon: User, label: "Profile" },
 ];
 
 export default function BottomNav({ activeTab, onTabChange }: BottomNavProps) {

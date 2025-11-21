@@ -20,60 +20,70 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
 
-    /* Primary brand color - Vibrant orange-red */
-    --primary: 24 88% 58%;
+    /* Primary brand color - Electric Purple */
+    --primary: 270 91% 65%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 24 95% 65%;
+    --primary-glow: 280 91% 70%;
+    --primary-dark: 265 85% 55%;
 
-    /* Secondary surfaces - Warm gray */
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
+    /* Secondary surfaces - Cool gray */
+    --secondary: 240 5% 96%;
+    --secondary-foreground: 240 6% 10%;
+    --secondary-dark: 240 5% 92%;
 
     /* Muted backgrounds */
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 46%;
 
-    /* Accent color - Complementary blue */
-    --accent: 221 83% 53%;
+    /* Accent color - Vibrant Cyan */
+    --accent: 189 94% 43%;
     --accent-foreground: 0 0% 100%;
+    --accent-dark: 189 85% 38%;
 
     /* Destructive alerts */
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Success color */
-    --success: 142 76% 36%;
+    /* Success color - Emerald */
+    --success: 158 64% 52%;
     --success-foreground: 0 0% 100%;
+    --success-dark: 158 64% 42%;
+
+    /* Surface variations */
+    --surface: 240 10% 98%;
+    --surface-dark: 240 8% 95%;
 
     /* Borders and inputs */
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 24 88% 58%;
+    --border: 240 6% 90%;
+    --input: 240 6% 94%;
+    --ring: 270 91% 65%;
 
     /* Border radius */
     --radius: 0.75rem;
 
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(24 88% 58%) 0%, hsl(14 88% 53%) 100%);
-    --gradient-secondary: linear-gradient(135deg, hsl(221 83% 53%) 0%, hsl(221 70% 60%) 100%);
-    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(240 4.8% 98%) 100%);
+    /* Gradients - Purple to Cyan */
+    --gradient-primary: linear-gradient(135deg, hsl(270 91% 65%) 0%, hsl(280 91% 70%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(189 94% 43%) 0%, hsl(189 85% 50%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(270 91% 65%) 0%, hsl(189 94% 43%) 100%);
+    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(240 10% 98%) 100%);
 
     /* Shadows */
-    --shadow-sm: 0 1px 2px 0 hsl(240 5.9% 10% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(240 5.9% 10% / 0.1), 0 2px 4px -1px hsl(240 5.9% 10% / 0.06);
-    --shadow-lg: 0 10px 15px -3px hsl(240 5.9% 10% / 0.1), 0 4px 6px -2px hsl(240 5.9% 10% / 0.05);
-    --shadow-xl: 0 20px 25px -5px hsl(240 5.9% 10% / 0.1), 0 10px 10px -5px hsl(240 5.9% 10% / 0.04);
-    --shadow-glow: 0 0 20px hsl(24 95% 65% / 0.3);
+    --shadow-sm: 0 1px 2px 0 hsl(270 91% 30% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(270 91% 30% / 0.1), 0 2px 4px -1px hsl(270 91% 30% / 0.06);
+    --shadow-lg: 0 10px 15px -3px hsl(270 91% 30% / 0.1), 0 4px 6px -2px hsl(270 91% 30% / 0.05);
+    --shadow-xl: 0 20px 25px -5px hsl(270 91% 30% / 0.1), 0 10px 10px -5px hsl(270 91% 30% / 0.04);
+    --shadow-glow: 0 0 30px hsl(270 91% 65% / 0.4);
+    --shadow-cyan-glow: 0 0 30px hsl(189 94% 43% / 0.4);
 
     /* Sidebar colors */
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 24 88% 58%;
+    --sidebar-background: 270 91% 65%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 189 94% 43%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 240 5.9% 90%;
-    --sidebar-ring: 24 88% 58%;
+    --sidebar-accent: 270 85% 70%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 270 80% 75%;
+    --sidebar-ring: 189 94% 43%;
   }
 
   .dark {
@@ -90,9 +100,10 @@ All colors MUST be HSL.
     --popover-foreground: 0 0% 98%;
 
     /* Primary brand color - Adjusted for dark */
-    --primary: 24 88% 58%;
+    --primary: 270 91% 65%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 24 95% 65%;
+    --primary-glow: 280 91% 70%;
+    --primary-dark: 265 85% 55%;
 
     /* Secondary surfaces */
     --secondary: 240 3.7% 15.9%;
@@ -103,25 +114,28 @@ All colors MUST be HSL.
     --muted-foreground: 240 5% 64.9%;
 
     /* Accent color */
-    --accent: 221 83% 53%;
+    --accent: 189 94% 43%;
     --accent-foreground: 0 0% 100%;
+    --accent-dark: 189 85% 38%;
 
     /* Destructive alerts */
     --destructive: 0 72.2% 50.6%;
     --destructive-foreground: 0 0% 100%;
 
     /* Success color */
-    --success: 142 76% 36%;
+    --success: 158 64% 52%;
     --success-foreground: 0 0% 100%;
+    --success-dark: 158 64% 42%;
 
     /* Borders and inputs */
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 24 88% 58%;
+    --border: 240 4% 18%;
+    --input: 240 4% 15%;
+    --ring: 270 91% 65%;
 
     /* Gradients for dark mode */
-    --gradient-primary: linear-gradient(135deg, hsl(24 88% 58%) 0%, hsl(14 88% 53%) 100%);
-    --gradient-secondary: linear-gradient(135deg, hsl(221 83% 53%) 0%, hsl(221 70% 60%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(270 91% 65%) 0%, hsl(280 91% 70%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(189 94% 43%) 0%, hsl(189 85% 50%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(270 91% 65%) 0%, hsl(189 94% 43%) 100%);
     --gradient-subtle: linear-gradient(180deg, hsl(240 10% 3.9%) 0%, hsl(240 6% 10%) 100%);
 
     /* Shadows for dark mode */
@@ -129,17 +143,18 @@ All colors MUST be HSL.
     --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.4), 0 2px 4px -1px hsl(0 0% 0% / 0.3);
     --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.4), 0 4px 6px -2px hsl(0 0% 0% / 0.3);
     --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.5), 0 10px 10px -5px hsl(0 0% 0% / 0.4);
-    --shadow-glow: 0 0 30px hsl(24 95% 45% / 0.4);
+    --shadow-glow: 0 0 40px hsl(270 91% 50% / 0.5);
+    --shadow-cyan-glow: 0 0 40px hsl(189 94% 43% / 0.5);
 
     /* Sidebar colors for dark mode */
-    --sidebar-background: 240 6% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 24 88% 58%;
+    --sidebar-background: 265 50% 15%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 189 94% 43%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 24 88% 58%;
+    --sidebar-accent: 265 40% 20%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 265 30% 25%;
+    --sidebar-ring: 189 94% 43%;
   }
 }
 
