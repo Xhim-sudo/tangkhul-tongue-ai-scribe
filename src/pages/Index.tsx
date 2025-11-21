@@ -8,6 +8,9 @@ import AccuracyDashboard from "@/components/AccuracyDashboard";
 import ManagementPortal from "@/components/ManagementPortal";
 import ContributorDashboard from "@/components/ContributorDashboard";
 import AccuracyChecker from "@/components/AccuracyChecker";
+import TranslationAnalytics from "@/components/TranslationAnalytics";
+import Leaderboard from "@/components/Leaderboard";
+import ReviewerWorkflow from "@/components/ReviewerWorkflow";
 import { useError } from "@/contexts/ErrorContext";
 import { useIsMobileView } from "@/lib/breakpoints";
 import BottomNav from "@/components/mobile/BottomNav";
@@ -32,8 +35,15 @@ const Index = () => {
         case "contributor":
           return <ContributorDashboard />;
         case "accuracy":
+          return <AccuracyChecker />;
+        case "leaderboard":
+          return <Leaderboard />;
+        case "analytics":
           return hasRole('admin') || hasRole('expert') || hasRole('reviewer') ? 
-            <AccuracyChecker /> : <div>Access denied</div>;
+            <TranslationAnalytics /> : <div>Access denied</div>;
+        case "review":
+          return hasRole('admin') || hasRole('expert') || hasRole('reviewer') ? 
+            <ReviewerWorkflow /> : <div>Access denied</div>;
         case "dashboard":
           return hasRole('admin') || hasRole('expert') || hasRole('reviewer') ? 
             <AccuracyDashboard /> : <div>Access denied</div>;
@@ -63,6 +73,9 @@ const Index = () => {
         case "training": return "Contribute";
         case "contributor": return "My Stats";
         case "accuracy": return "Accuracy Check";
+        case "leaderboard": return "Leaderboard";
+        case "analytics": return "Analytics";
+        case "review": return "Review Submissions";
         case "dashboard": return "Dashboard";
         case "management": return "Management";
         default: return "Tangkhul Translator";

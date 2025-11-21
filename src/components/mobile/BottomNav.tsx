@@ -1,4 +1,4 @@
-import { Home, Languages, BookOpen, User, Award } from "lucide-react";
+import { Home, Languages, BookOpen, User, Award, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface BottomNavProps {
@@ -9,6 +9,7 @@ interface BottomNavProps {
 const navItems = [
   { id: "translate", icon: Home, label: "Home" },
   { id: "training", icon: BookOpen, label: "Contribute" },
+  { id: "leaderboard", icon: Trophy, label: "Ranks" },
   { id: "contributor", icon: Award, label: "Stats" },
   { id: "management", icon: User, label: "Profile" },
 ];
