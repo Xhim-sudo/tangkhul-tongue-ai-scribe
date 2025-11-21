@@ -10,6 +10,9 @@ import {
   Database, 
   MessageSquare, 
   BarChart3,
+  TrendingUp,
+  Trophy,
+  CheckSquare,
   Menu,
   X
 } from "lucide-react";
@@ -56,6 +59,24 @@ const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange }) => {
       id: 'accuracy',
       label: 'Accuracy Check',
       icon: BarChart3,
+      roles: ['admin', 'expert', 'reviewer', 'contributor']
+    },
+    {
+      id: 'leaderboard',
+      label: 'Leaderboard',
+      icon: Trophy,
+      roles: ['admin', 'expert', 'reviewer', 'contributor']
+    },
+    {
+      id: 'analytics',
+      label: 'Analytics',
+      icon: TrendingUp,
+      roles: ['admin', 'expert', 'reviewer']
+    },
+    {
+      id: 'review',
+      label: 'Review',
+      icon: CheckSquare,
       roles: ['admin', 'expert', 'reviewer']
     },
     {
