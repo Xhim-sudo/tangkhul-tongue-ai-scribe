@@ -19,7 +19,16 @@ serve(async (req) => {
     const { text, source_language, target_language } = await req.json();
 
     if (!text || !source_language || !target_language) {
-      throw new Error('Missing required fields: text, source_language, target_language');
+      return new Response(
+        JSON.stringify({
+          error: 'Missing required fields: text, source_language, target_language',
+          found: false
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      );
     }
 
     // Create Supabase client
@@ -43,24 +52,29 @@ serve(async (req) => {
     let userId = null;
     
     if (authHeader) {
-      const token = authHeader.replace('Bearer ', '');
-      const { data: { user } } = await supabaseClient.auth.getUser(token);
-      userId = user?.id;
+      try {
+        const token = authHeader.replace('Bearer ', '');
+        const { data: { user } } = await supabaseClient.auth.getUser(token);
+        userId = user?.id;
+      } catch (authErr) {
+        console.log('Auth header parsing failed, proceeding without user ID');
+      }
     }
 
+    // Log analytics asynchronously
     supabaseClient
       .from('translation_analytics')
       .insert({
         query_text: text,
         source_language,
         target_language,
-        result_method: result.method,
+        result_found: result.found,
         confidence_score: result.confidence_score,
         response_time_ms: responseTime,
         user_id: userId,
-        cached: result.metadata?.cached || false
+        cache_hit: result.metadata?.cached || false
       })
-      .then(() => console.log('Analytics logged'))
+      .then(() => console.log('Analytics logged successfully'))
       .catch(err => console.error('Failed to log analytics:', err));
 
     return new Response(
@@ -79,12 +93,16 @@ serve(async (req) => {
     
     return new Response(
       JSON.stringify({
-        error: error.message || 'Translation failed',
-        details: error.toString()
+        translated_text: null,
+        confidence_score: 0,
+        method: 'error',
+        found: false,
+        error: error.message || 'Translation service error',
+        metadata: {}
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
+        status: 200, // Return 200 so the frontend can handle gracefully
       }
     );
   }
