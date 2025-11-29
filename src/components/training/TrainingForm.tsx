@@ -59,10 +59,9 @@ const TrainingForm = ({ onSubmit, isLoading = false }: TrainingFormProps) => {
 
   const loadCategories = async () => {
     try {
-      const { data } = await (supabase as any)
+      const { data } = await supabase
         .from('training_categories')
         .select('id, name')
-        .eq('is_active', true)
         .order('name');
       
       if (data) {

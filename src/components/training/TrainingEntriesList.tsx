@@ -1,21 +1,22 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, Tag } from "lucide-react";
+import { BookOpen, Star } from "lucide-react";
 
 interface TrainingEntry {
   id: string;
   english_text: string;
   tangkhul_text: string;
-  category: string;
-  status: string;
-  confidence_score: number;
-  tags?: string[];
-  context?: string;
+  category_id: string | null;
+  is_golden_data: boolean | null;
+  confidence_score: number | null;
+  review_count: number | null;
   created_at: string;
   profiles?: {
-    full_name: string;
+    full_name: string | null;
+  };
+  training_categories?: {
+    name: string;
   };
 }
 
@@ -48,35 +49,32 @@ const TrainingEntriesList = ({ entries }: TrainingEntriesListProps) => {
               </div>
               
               <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
-                <Badge variant="outline" className="border-orange-200">
-                  {entry.category}
-                </Badge>
-                <Badge variant={
-                  entry.status === 'approved' ? "default" :
-                  entry.status === 'pending' ? "secondary" : "destructive"
-                }>
-                  {entry.status}
-                </Badge>
-                <Badge variant="outline" className={
-                  entry.confidence_score >= 90 ? "border-green-200 text-green-700" :
-                  entry.confidence_score >= 75 ? "border-yellow-200 text-yellow-700" :
-                  "border-red-200 text-red-700"
-                }>
-                  {entry.confidence_score}% confidence
-                </Badge>
-                {entry.tags?.map((tag: string) => (
-                  <Badge key={tag} variant="secondary" className="bg-orange-100 text-orange-700">
-                    <Tag className="w-3 h-3 mr-1" />
-                    {tag}
+                {entry.training_categories?.name && (
+                  <Badge variant="outline" className="border-orange-200">
+                    {entry.training_categories.name}
                   </Badge>
-                ))}
+                )}
+                {entry.is_golden_data && (
+                  <Badge className="bg-yellow-100 text-yellow-700 border-yellow-300">
+                    <Star className="w-3 h-3 mr-1" />
+                    Golden Data
+                  </Badge>
+                )}
+                {entry.confidence_score !== null && (
+                  <Badge variant="outline" className={
+                    entry.confidence_score >= 90 ? "border-green-200 text-green-700" :
+                    entry.confidence_score >= 75 ? "border-yellow-200 text-yellow-700" :
+                    "border-red-200 text-red-700"
+                  }>
+                    {entry.confidence_score}% confidence
+                  </Badge>
+                )}
+                {entry.review_count !== null && entry.review_count > 0 && (
+                  <Badge variant="secondary">
+                    {entry.review_count} reviews
+                  </Badge>
+                )}
               </div>
-              
-              {entry.context && (
-                <p className="text-sm text-gray-600 mt-2">
-                  <span className="font-medium">Context:</span> {entry.context}
-                </p>
-              )}
               
               <div className="text-xs text-gray-500 mt-2">
                 By {entry.profiles?.full_name || 'Anonymous'} • {new Date(entry.created_at).toLocaleDateString()}

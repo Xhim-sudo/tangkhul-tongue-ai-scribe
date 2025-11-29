@@ -1,11 +1,10 @@
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
-import { normalizeText, generateHash, calculateSimilarity } from '../_shared/normalization.ts';
-import { calculateConfidence, CONFIDENCE_CONFIG } from '../_shared/confidence.ts';
 
 export interface TranslationResult {
-  translated_text: string;
+  translated_text: string | null;
   confidence_score: number;
   method: string;
+  found: boolean;
   alternatives?: Array<{
     text: string;
     confidence: number;
@@ -14,10 +13,31 @@ export interface TranslationResult {
   metadata: {
     cached?: boolean;
     submission_count?: number;
-    expert_votes?: number;
     is_golden_data?: boolean;
-    grammar_info?: any;
   };
+}
+
+// Normalize text for comparison
+function normalizeText(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s]/g, '')
+    .replace(/\s+/g, ' ');
+}
+
+// Simple similarity calculation
+function calculateSimilarity(text1: string, text2: string): number {
+  const s1 = normalizeText(text1);
+  const s2 = normalizeText(text2);
+  
+  if (s1 === s2) return 1;
+  
+  const words1 = s1.split(' ');
+  const words2 = s2.split(' ');
+  const commonWords = words1.filter(w => words2.includes(w));
+  
+  return commonWords.length / Math.max(words1.length, words2.length);
 }
 
 export async function findTranslation(
@@ -27,77 +47,89 @@ export async function findTranslation(
   targetLang: string
 ): Promise<TranslationResult> {
   const normalizedSource = normalizeText(sourceText);
-  const sourceHash = await generateHash(normalizedSource);
+  
+  console.log(`Looking up translation for: "${sourceText}" (${sourceLang} → ${targetLang})`);
 
-  // Step 1: Check cache
-  const cacheResult = await checkCache(supabaseClient, sourceHash, sourceLang, targetLang);
-  if (cacheResult) return cacheResult;
+  // Step 1: Check cache first
+  const cacheResult = await checkCache(supabaseClient, normalizedSource, sourceLang, targetLang);
+  if (cacheResult) {
+    console.log('Cache hit!');
+    return cacheResult;
+  }
 
-  // Step 2: Exact match on normalized text
+  // Step 2: Exact match in training_entries
   const exactMatch = await findExactMatch(supabaseClient, normalizedSource, sourceLang, targetLang);
   if (exactMatch) {
-    await saveToCache(supabaseClient, sourceHash, sourceLang, targetLang, exactMatch);
+    console.log('Exact match found in training_entries');
+    await saveToCache(supabaseClient, normalizedSource, sourceLang, targetLang, exactMatch);
     return exactMatch;
   }
 
-  // Step 3: Consensus data
-  const consensusMatch = await findConsensusMatch(supabaseClient, normalizedSource);
+  // Step 3: Check consensus data
+  const consensusMatch = await findConsensusMatch(supabaseClient, normalizedSource, sourceLang, targetLang);
   if (consensusMatch) {
-    await saveToCache(supabaseClient, sourceHash, sourceLang, targetLang, consensusMatch);
+    console.log('Consensus match found');
+    await saveToCache(supabaseClient, normalizedSource, sourceLang, targetLang, consensusMatch);
     return consensusMatch;
   }
 
-  // Step 4: Similarity-based matching using pg_trgm
+  // Step 4: Similarity-based matching
   const similarMatch = await findSimilarMatches(supabaseClient, normalizedSource, sourceLang, targetLang);
   if (similarMatch) {
-    await saveToCache(supabaseClient, sourceHash, sourceLang, targetLang, similarMatch);
+    console.log('Similar match found');
     return similarMatch;
   }
 
-  // Step 5: Partial/word-by-word matching
-  const partialMatch = await findPartialMatches(supabaseClient, normalizedSource, sourceLang, targetLang);
-  if (partialMatch) {
-    return partialMatch; // Don't cache partial matches
-  }
-
-  // No match found
-  throw new Error('No translation found');
+  // No match found - return graceful response
+  console.log('No translation found');
+  return {
+    translated_text: null,
+    confidence_score: 0,
+    method: 'not_found',
+    found: false,
+    metadata: {}
+  };
 }
 
 async function checkCache(
   supabaseClient: SupabaseClient,
-  sourceHash: string,
+  normalizedText: string,
   sourceLang: string,
   targetLang: string
 ): Promise<TranslationResult | null> {
-  const { data, error } = await supabaseClient
-    .from('translation_cache')
-    .select('*')
-    .eq('source_text_hash', sourceHash)
-    .eq('source_language', sourceLang)
-    .eq('target_language', targetLang)
-    .single();
+  try {
+    const { data, error } = await supabaseClient
+      .from('translation_cache')
+      .select('*')
+      .eq('source_text', normalizedText)
+      .eq('source_lang', sourceLang)
+      .eq('target_lang', targetLang)
+      .single();
 
-  if (error || !data) return null;
+    if (error || !data) return null;
 
-  // Update hit count and last_accessed
-  await supabaseClient
-    .from('translation_cache')
-    .update({ 
-      hit_count: data.hit_count + 1,
-      last_accessed: new Date().toISOString()
-    })
-    .eq('id', data.id);
+    // Update hit count
+    await supabaseClient
+      .from('translation_cache')
+      .update({ 
+        hit_count: (data.hit_count || 0) + 1,
+        last_used_at: new Date().toISOString()
+      })
+      .eq('id', data.id);
 
-  return {
-    translated_text: data.translated_text,
-    confidence_score: data.confidence_score,
-    method: 'cache_hit',
-    metadata: {
-      cached: true,
-      ...data.metadata
-    }
-  };
+    return {
+      translated_text: data.target_text,
+      confidence_score: data.confidence_score || 85,
+      method: 'cache',
+      found: true,
+      metadata: {
+        cached: true
+      }
+    };
+  } catch (err) {
+    console.error('Cache lookup error:', err);
+    return null;
+  }
 }
 
 async function findExactMatch(
@@ -106,64 +138,83 @@ async function findExactMatch(
   sourceLang: string,
   targetLang: string
 ): Promise<TranslationResult | null> {
-  const sourceField = sourceLang === 'english' ? 'normalized_english' : 'normalized_tangkhul';
-  const targetField = targetLang === 'tangkhul' ? 'tangkhul_text' : 'english_text';
+  try {
+    const isEnglishSource = sourceLang === 'english' || sourceLang === 'en';
+    const sourceField = isEnglishSource ? 'english_text' : 'tangkhul_text';
+    const targetField = isEnglishSource ? 'tangkhul_text' : 'english_text';
 
-  const { data, error } = await supabaseClient
-    .from('training_entries')
-    .select('*')
-    .eq(sourceField, normalizedText)
-    .eq('status', 'approved')
-    .order('confidence_score', { ascending: false })
-    .limit(1)
-    .single();
+    // Try exact match first
+    const { data, error } = await supabaseClient
+      .from('training_entries')
+      .select('*')
+      .ilike(sourceField, normalizedText)
+      .order('confidence_score', { ascending: false, nullsFirst: false })
+      .limit(1);
 
-  if (error || !data) return null;
-
-  return {
-    translated_text: data[targetField],
-    confidence_score: CONFIDENCE_CONFIG.EXACT_MATCH,
-    method: 'exact_match',
-    metadata: {
-      grammar_info: data.grammatical_features
+    if (error) {
+      console.error('Exact match query error:', error);
+      return null;
     }
-  };
+
+    if (!data || data.length === 0) return null;
+
+    const match = data[0];
+    return {
+      translated_text: match[targetField],
+      confidence_score: match.confidence_score || 90,
+      method: 'exact',
+      found: true,
+      metadata: {
+        is_golden_data: match.is_golden_data
+      }
+    };
+  } catch (err) {
+    console.error('Exact match error:', err);
+    return null;
+  }
 }
 
 async function findConsensusMatch(
   supabaseClient: SupabaseClient,
-  normalizedText: string
+  normalizedText: string,
+  sourceLang: string,
+  targetLang: string
 ): Promise<TranslationResult | null> {
-  const { data, error } = await supabaseClient
-    .from('translation_consensus')
-    .select('*')
-    .eq('english_text', normalizedText)
-    .gte('weighted_agreement_score', 70)
-    .order('weighted_agreement_score', { ascending: false })
-    .limit(1)
-    .single();
+  try {
+    const isEnglishSource = sourceLang === 'english' || sourceLang === 'en';
+    const sourceField = isEnglishSource ? 'english_text' : 'tangkhul_text';
+    const targetField = isEnglishSource ? 'tangkhul_text' : 'english_text';
 
-  if (error || !data) return null;
+    const { data, error } = await supabaseClient
+      .from('translation_consensus')
+      .select('*')
+      .ilike(sourceField, normalizedText)
+      .gte('agreement_score', 70)
+      .order('agreement_score', { ascending: false })
+      .limit(1);
 
-  const confidence = calculateConfidence({
-    method: 'consensus',
-    submissionCount: data.submission_count,
-    expertVotes: data.expert_votes,
-    reviewerVotes: data.reviewer_votes,
-    contributorVotes: data.contributor_votes,
-    isGoldenData: data.is_golden_data
-  });
-
-  return {
-    translated_text: data.tangkhul_text,
-    confidence_score: confidence,
-    method: 'consensus',
-    metadata: {
-      submission_count: data.submission_count,
-      expert_votes: data.expert_votes,
-      is_golden_data: data.is_golden_data
+    if (error) {
+      console.error('Consensus query error:', error);
+      return null;
     }
-  };
+
+    if (!data || data.length === 0) return null;
+
+    const match = data[0];
+    return {
+      translated_text: match[targetField],
+      confidence_score: Math.round(match.agreement_score),
+      method: 'consensus',
+      found: true,
+      metadata: {
+        submission_count: match.submission_count,
+        is_golden_data: match.is_golden_data
+      }
+    };
+  } catch (err) {
+    console.error('Consensus match error:', err);
+    return null;
+  }
 }
 
 async function findSimilarMatches(
@@ -172,111 +223,83 @@ async function findSimilarMatches(
   sourceLang: string,
   targetLang: string
 ): Promise<TranslationResult | null> {
-  const sourceField = sourceLang === 'english' ? 'normalized_english' : 'normalized_tangkhul';
-  const targetField = targetLang === 'tangkhul' ? 'tangkhul_text' : 'english_text';
+  try {
+    const isEnglishSource = sourceLang === 'english' || sourceLang === 'en';
+    const sourceField = isEnglishSource ? 'english_text' : 'tangkhul_text';
+    const targetField = isEnglishSource ? 'tangkhul_text' : 'english_text';
 
-  const { data, error } = await supabaseClient
-    .from('training_entries')
-    .select('*')
-    .eq('status', 'approved')
-    .gte('confidence_score', 70)
-    .limit(10);
-
-  if (error || !data || data.length === 0) return null;
-
-  // Calculate similarity for each entry
-  const matches = data
-    .map(entry => ({
-      ...entry,
-      similarity: calculateSimilarity(normalizedText, entry[sourceField])
-    }))
-    .filter(entry => entry.similarity >= CONFIDENCE_CONFIG.SIMILARITY_THRESHOLD)
-    .sort((a, b) => b.similarity - a.similarity);
-
-  if (matches.length === 0) return null;
-
-  const bestMatch = matches[0];
-  const confidence = calculateConfidence({
-    method: 'similarity',
-    similarity: bestMatch.similarity
-  });
-
-  const alternatives = matches.slice(1, 4).map(match => ({
-    text: match[targetField],
-    confidence: Math.round(match.similarity * 100),
-    source: 'similarity'
-  }));
-
-  return {
-    translated_text: bestMatch[targetField],
-    confidence_score: confidence,
-    method: 'similarity',
-    alternatives: alternatives.length > 0 ? alternatives : undefined,
-    metadata: {
-      grammar_info: bestMatch.grammatical_features
-    }
-  };
-}
-
-async function findPartialMatches(
-  supabaseClient: SupabaseClient,
-  normalizedText: string,
-  sourceLang: string,
-  targetLang: string
-): Promise<TranslationResult | null> {
-  const words = normalizedText.split(/\s+/);
-  if (words.length === 1) return null;
-
-  const sourceField = sourceLang === 'english' ? 'normalized_english' : 'normalized_tangkhul';
-  const targetField = targetLang === 'tangkhul' ? 'tangkhul_text' : 'english_text';
-
-  const wordMatches: Record<string, string> = {};
-
-  for (const word of words) {
-    const { data } = await supabaseClient
+    // Get entries to compare
+    const { data, error } = await supabaseClient
       .from('training_entries')
-      .select(targetField)
-      .eq(sourceField, word)
-      .eq('status', 'approved')
-      .limit(1)
-      .single();
+      .select('*')
+      .order('confidence_score', { ascending: false, nullsFirst: false })
+      .limit(50);
 
-    if (data) {
-      wordMatches[word] = data[targetField];
+    if (error) {
+      console.error('Similar match query error:', error);
+      return null;
     }
+
+    if (!data || data.length === 0) return null;
+
+    // Calculate similarity for each entry
+    const matches = data
+      .map(entry => ({
+        ...entry,
+        similarity: calculateSimilarity(normalizedText, entry[sourceField] || '')
+      }))
+      .filter(entry => entry.similarity >= 0.6)
+      .sort((a, b) => b.similarity - a.similarity);
+
+    if (matches.length === 0) return null;
+
+    const bestMatch = matches[0];
+    const confidence = Math.round(bestMatch.similarity * (bestMatch.confidence_score || 80));
+
+    const alternatives = matches.slice(1, 4).map(match => ({
+      text: match[targetField],
+      confidence: Math.round(match.similarity * 100),
+      source: 'similarity'
+    }));
+
+    return {
+      translated_text: bestMatch[targetField],
+      confidence_score: confidence,
+      method: 'similarity',
+      found: true,
+      alternatives: alternatives.length > 0 ? alternatives : undefined,
+      metadata: {
+        is_golden_data: bestMatch.is_golden_data
+      }
+    };
+  } catch (err) {
+    console.error('Similar match error:', err);
+    return null;
   }
-
-  if (Object.keys(wordMatches).length === 0) return null;
-
-  const translatedWords = words.map(word => wordMatches[word] || word);
-  const coverage = Object.keys(wordMatches).length / words.length;
-
-  return {
-    translated_text: translatedWords.join(' '),
-    confidence_score: Math.round(CONFIDENCE_CONFIG.PARTIAL_MATCH * coverage),
-    method: 'partial',
-    metadata: {
-      coverage
-    }
-  };
 }
 
 async function saveToCache(
   supabaseClient: SupabaseClient,
-  sourceHash: string,
+  normalizedText: string,
   sourceLang: string,
   targetLang: string,
   result: TranslationResult
 ): Promise<void> {
-  await supabaseClient
-    .from('translation_cache')
-    .upsert({
-      source_text_hash: sourceHash,
-      source_language: sourceLang,
-      target_language: targetLang,
-      translated_text: result.translated_text,
-      confidence_score: result.confidence_score,
-      method: result.method,
-      metadata: result.metadata
-    });
+  try {
+    await supabaseClient
+      .from('translation_cache')
+      .upsert({
+        source_text: normalizedText,
+        source_lang: sourceLang,
+        target_lang: targetLang,
+        target_text: result.translated_text,
+        confidence_score: result.confidence_score,
+        hit_count: 1,
+        last_used_at: new Date().toISOString()
+      }, {
+        onConflict: 'source_text,source_lang,target_lang'
+      });
+  } catch (err) {
+    console.error('Cache save error:', err);
+  }
 }

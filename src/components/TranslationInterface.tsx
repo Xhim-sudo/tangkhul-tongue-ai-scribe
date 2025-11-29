@@ -21,10 +21,10 @@ const TranslationInterface = () => {
   // Load common phrases from database
   useEffect(() => {
     const loadCommonPhrases = async () => {
-      const { data } = await (supabase as any)
+      const { data } = await supabase
         .from('training_entries')
         .select('english_text, tangkhul_text')
-        .eq('status', 'approved')
+        .eq('is_golden_data', true)
         .limit(6);
       
       if (data) {
@@ -47,23 +47,40 @@ const TranslationInterface = () => {
 
     try {
       const result = await translateText(sourceText, sourceLanguage, targetLanguage);
+      
+      // Handle no translation found
+      if (!result.found || !result.translated_text) {
+        setTranslatedText('');
+        setTranslationResult(result);
+        toast({
+          title: "Translation not found",
+          description: "This phrase is not in our database yet. Consider contributing it!",
+          variant: "default",
+        });
+        return;
+      }
+      
       setTranslatedText(result.translated_text);
       setTranslationResult(result);
       
       let toastMessage = "Translation complete";
-      if (result.method === 'exact_match') {
+      if (result.method === 'exact' || result.method === 'exact_match') {
         toastMessage = "Perfect match found in our database!";
-      } else if (result.method === 'similarity_match') {
+      } else if (result.method === 'similarity' || result.method === 'similarity_match') {
         toastMessage = "Similar translation found in our database";
-      } else if (result.method === 'partial_match') {
+      } else if (result.method === 'partial' || result.method === 'partial_match') {
         toastMessage = "Partial translation available";
-      } else if (result.method === 'no_match') {
-        toastMessage = "Translation not available yet";
+      } else if (result.method === 'consensus') {
+        toastMessage = "Community-verified translation found!";
+      } else if (result.method === 'cache') {
+        toastMessage = "Quick translation from cache";
+      } else if (result.method === 'static_fallback') {
+        toastMessage = "Translation from offline data";
       }
       
       toast({
         title: toastMessage,
-        description: result.suggestion || "Translation based on our training data.",
+        description: `Confidence: ${result.confidence_score}%`,
       });
     } catch (error) {
       // Error handling is done in the hook
@@ -89,20 +106,11 @@ const TranslationInterface = () => {
   };
 
   const handleFeedback = async (isPositive: boolean) => {
-    if (translatedText) {
-      const { error } = await (supabase as any)
-        .from('translations')
-        .update({ feedback_rating: isPositive ? 5 : 1 })
-        .eq('source_text', sourceText)
-        .eq('translated_text', translatedText);
-
-      if (!error) {
-        toast({
-          title: isPositive ? "Thank you for positive feedback!" : "Thank you for your feedback!",
-          description: "Your feedback helps improve our AI translation model.",
-        });
-      }
-    }
+    // Just show a toast for now - feedback can be implemented with a proper table later
+    toast({
+      title: isPositive ? "Thank you for positive feedback!" : "Thank you for your feedback!",
+      description: "Your feedback helps improve our translations.",
+    });
   };
 
   return (

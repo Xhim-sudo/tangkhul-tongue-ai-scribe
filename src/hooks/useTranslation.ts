@@ -55,18 +55,29 @@ export const useTranslation = () => {
 
       if (error) throw error;
 
-      // Save translation to history
-      const { error: saveError } = await (supabase as any)
-        .from('translations')
-        .insert({
-          source_text: text,
-          translated_text: data.translated_text,
-          source_language: fromLang,
-          target_language: toLang,
-          confidence_score: data.confidence_score || 85
-        });
-
-      if (saveError) console.error('Failed to save translation:', saveError);
+      // Handle case where no translation was found
+      if (data && !data.found && !data.translated_text) {
+        // Try static fallback
+        const staticTranslation = staticSeedLookup(text);
+        if (staticTranslation) {
+          return {
+            translated_text: staticTranslation,
+            confidence_score: 70,
+            method: 'static_fallback',
+            found: true,
+            metadata: { offline: true }
+          };
+        }
+        
+        return {
+          translated_text: null,
+          confidence_score: 0,
+          method: 'not_found',
+          found: false,
+          message: 'No translation found. Try contributing this phrase!',
+          metadata: {}
+        };
+      }
 
       return data;
     } catch (error: any) {
