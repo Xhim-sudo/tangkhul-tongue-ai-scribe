@@ -9,8 +9,10 @@ import ManagementPortal from "@/components/ManagementPortal";
 import ContributorDashboard from "@/components/ContributorDashboard";
 import AccuracyChecker from "@/components/AccuracyChecker";
 import TranslationAnalytics from "@/components/TranslationAnalytics";
+import AnalyticsCharts from "@/components/analytics/AnalyticsCharts";
 import Leaderboard from "@/components/Leaderboard";
 import ReviewerWorkflow from "@/components/ReviewerWorkflow";
+import CollaborativeReview from "@/components/CollaborativeReview";
 import AdminPanel from "@/components/AdminPanel";
 import ProfilePage from "@/components/ProfilePage";
 import NotificationsPanel from "@/components/NotificationsPanel";
@@ -48,9 +50,15 @@ const Index = () => {
         case "analytics":
           return hasRole('admin') || hasRole('expert') || hasRole('reviewer') ? 
             <TranslationAnalytics /> : <div>Access denied</div>;
+        case "charts":
+          return hasRole('admin') || hasRole('expert') || hasRole('reviewer') ? 
+            <AnalyticsCharts /> : <div>Access denied</div>;
         case "review":
           return hasRole('admin') || hasRole('expert') || hasRole('reviewer') ? 
             <ReviewerWorkflow /> : <div>Access denied</div>;
+        case "collaborate":
+          return hasRole('admin') || hasRole('expert') || hasRole('reviewer') ? 
+            <CollaborativeReview /> : <div>Access denied</div>;
         case "dashboard":
           return hasRole('admin') || hasRole('expert') || hasRole('reviewer') ? 
             <AccuracyDashboard /> : <div>Access denied</div>;
@@ -87,7 +95,9 @@ const Index = () => {
         case "profile": return "Profile";
         case "notifications": return "Notifications";
         case "analytics": return "Analytics";
+        case "charts": return "Detailed Charts";
         case "review": return "Review Submissions";
+        case "collaborate": return "Collaborative Review";
         case "dashboard": return "Dashboard";
         case "admin": return "Admin Panel";
         case "management": return "Management";
