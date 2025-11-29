@@ -15,7 +15,9 @@ import {
   CheckSquare,
   Menu,
   X,
-  Bell
+  Bell,
+  PieChart,
+  Users
 } from "lucide-react";
 import { useAuth } from '@/contexts/AuthContext';
 import { useState } from 'react';
@@ -75,9 +77,21 @@ const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange }) => {
       roles: ['admin', 'expert', 'reviewer']
     },
     {
+      id: 'charts',
+      label: 'Charts',
+      icon: PieChart,
+      roles: ['admin', 'expert', 'reviewer']
+    },
+    {
       id: 'review',
       label: 'Review',
       icon: CheckSquare,
+      roles: ['admin', 'expert', 'reviewer']
+    },
+    {
+      id: 'collaborate',
+      label: 'Collaborate',
+      icon: Users,
       roles: ['admin', 'expert', 'reviewer']
     },
     {
