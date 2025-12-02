@@ -9,6 +9,8 @@ import AuthGuard from "@/components/AuthGuard";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import AuthPage from "@/components/AuthPage";
 import Index from "@/pages/Index";
+import Install from "@/pages/Install";
+import OfflineIndicator from "@/components/OfflineIndicator";
 import { useError } from "@/contexts/ErrorContext";
 
 const queryClient = new QueryClient();
@@ -30,6 +32,10 @@ const AppWithErrorHandling = () => {
             } 
           />
           <Route 
+            path="/install" 
+            element={<Install />} 
+          />
+          <Route 
             path="/" 
             element={
               <AuthGuard requireAuth={true}>
@@ -39,6 +45,7 @@ const AppWithErrorHandling = () => {
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        <OfflineIndicator />
       </BrowserRouter>
     </ErrorBoundary>
   );

@@ -4,11 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Save } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Save, WifiOff, Cloud } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import GrammarFeaturesInput from "./GrammarFeaturesInput";
 import { toast } from "@/hooks/use-toast";
+import { useOfflineQueue } from '@/hooks/useOfflineQueue';
 
 interface TrainingFormProps {
   onSubmit: (data: {
@@ -31,6 +33,8 @@ const TrainingForm = ({ onSubmit, isLoading = false }: TrainingFormProps) => {
   const [partOfSpeech, setPartOfSpeech] = useState("");
   const [grammaticalFeatures, setGrammaticalFeatures] = useState<Record<string, any>>({});
   const [categories, setCategories] = useState<Array<{id: string, name: string}>>([]);
+  
+  const { isOnline, addToQueue, queueLength } = useOfflineQueue();
 
   // Load categories from database with real-time updates
   useEffect(() => {
@@ -87,6 +91,31 @@ const TrainingForm = ({ onSubmit, isLoading = false }: TrainingFormProps) => {
 
   const handleSubmit = async () => {
     if (!englishText.trim() || !tangkhulText.trim()) return;
+
+    // If offline, add to queue
+    if (!isOnline) {
+      addToQueue({
+        english_text: englishText.trim(),
+        tangkhul_text: tangkhulText.trim(),
+        category_id: category || undefined,
+        is_golden_data: false
+      });
+
+      // Clear form
+      setEnglishText("");
+      setTangkhulText("");
+      setCategory("");
+      setContext("");
+      setTags("");
+      setPartOfSpeech("");
+      setGrammaticalFeatures({});
+
+      toast({
+        title: "Saved Offline",
+        description: "Your contribution will sync when you're back online.",
+      });
+      return;
+    }
 
     // 1) Call existing onSubmit to preserve current behavior
     onSubmit({
@@ -154,43 +183,59 @@ const TrainingForm = ({ onSubmit, isLoading = false }: TrainingFormProps) => {
   };
 
   return (
-    <Card className="bg-white/70 backdrop-blur-sm border-orange-200">
+    <Card className="glass border-primary/20">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-orange-800">
-          <Plus className="w-5 h-5" />
-          Contribute High-Quality Training Data
-        </CardTitle>
-        <p className="text-sm text-gray-600">
-          Your contributions help build the AI model. Accuracy is key for reaching our 99% target!
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-foreground">
+            <Plus className="w-5 h-5 text-primary" />
+            Contribute Training Data
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            {!isOnline && (
+              <Badge variant="outline" className="text-warning border-warning">
+                <WifiOff className="w-3 h-3 mr-1" />
+                Offline Mode
+              </Badge>
+            )}
+            {queueLength > 0 && (
+              <Badge variant="secondary">
+                <Cloud className="w-3 h-3 mr-1" />
+                {queueLength} pending
+              </Badge>
+            )}
+          </div>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Your contributions help build the AI model. {!isOnline && "Entries will sync when online."}
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">English Text</label>
+            <label className="text-sm font-medium text-foreground">English Text</label>
             <Textarea
               placeholder="Enter English text..."
               value={englishText}
               onChange={(e) => setEnglishText(e.target.value)}
-              className="border-orange-200 focus:border-orange-400"
+              className="border-border focus:border-primary"
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Tangkhul Translation</label>
+            <label className="text-sm font-medium text-foreground">Tangkhul Translation</label>
             <Textarea
               placeholder="Enter accurate Tangkhul translation..."
               value={tangkhulText}
               onChange={(e) => setTangkhulText(e.target.value)}
-              className="border-orange-200 focus:border-orange-400"
+              className="border-border focus:border-primary"
             />
           </div>
         </div>
 
         <div className="grid md:grid-cols-3 gap-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Category</label>
+            <label className="text-sm font-medium text-foreground">Category</label>
             <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="border-orange-200">
+              <SelectTrigger className="border-border">
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
               <SelectContent>
@@ -201,30 +246,30 @@ const TrainingForm = ({ onSubmit, isLoading = false }: TrainingFormProps) => {
             </Select>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Context/Usage</label>
+            <label className="text-sm font-medium text-foreground">Context/Usage</label>
             <Textarea
               placeholder="When and how is this used?"
               value={context}
               onChange={(e) => setContext(e.target.value)}
-              className="border-orange-200 focus:border-orange-400 h-10"
+              className="border-border focus:border-primary h-10"
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Tags (comma separated)</label>
+            <label className="text-sm font-medium text-foreground">Tags (comma separated)</label>
             <Input
               placeholder="formal, casual, question"
               value={tags}
               onChange={(e) => setTags(e.target.value)}
-              className="border-orange-200 focus:border-orange-400"
+              className="border-border focus:border-primary"
             />
           </div>
         </div>
 
         <div className="grid md:grid-cols-3 gap-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Part of Speech</label>
+            <label className="text-sm font-medium text-foreground">Part of Speech</label>
             <Select value={partOfSpeech} onValueChange={setPartOfSpeech}>
-              <SelectTrigger className="border-orange-200">
+              <SelectTrigger className="border-border">
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
               <SelectContent>
@@ -239,7 +284,7 @@ const TrainingForm = ({ onSubmit, isLoading = false }: TrainingFormProps) => {
             </Select>
           </div>
           <div className="md:col-span-2 space-y-2">
-            <label className="text-sm font-medium">Grammar usage and functions</label>
+            <label className="text-sm font-medium text-foreground">Grammar usage and functions</label>
             <GrammarFeaturesInput
               partOfSpeech={partOfSpeech || 'unknown'}
               value={grammaticalFeatures}
@@ -249,16 +294,25 @@ const TrainingForm = ({ onSubmit, isLoading = false }: TrainingFormProps) => {
         </div>
 
         <div className="flex justify-between items-center">
-          <div className="text-sm text-gray-600">
-            💡 Tip: Multiple submissions of the same phrase help determine accuracy through consensus
+          <div className="text-sm text-muted-foreground">
+            💡 Tip: Multiple submissions help determine accuracy through consensus
           </div>
           <Button 
             onClick={handleSubmit}
-            className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700"
+            className="bg-gradient-to-r from-primary to-accent hover:opacity-90"
             disabled={!englishText.trim() || !tangkhulText.trim() || isLoading}
           >
-            <Save className="w-4 h-4 mr-2" />
-            Submit Training Data
+            {isOnline ? (
+              <>
+                <Save className="w-4 h-4 mr-2" />
+                Submit
+              </>
+            ) : (
+              <>
+                <WifiOff className="w-4 h-4 mr-2" />
+                Save Offline
+              </>
+            )}
           </Button>
         </div>
       </CardContent>
@@ -267,4 +321,3 @@ const TrainingForm = ({ onSubmit, isLoading = false }: TrainingFormProps) => {
 };
 
 export default TrainingForm;
-
