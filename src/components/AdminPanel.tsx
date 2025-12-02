@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { 
   Users, FolderTree, TrendingUp, Download, 
-  UserCheck, UserX, Edit, Trash2, Plus 
+  UserCheck, UserX, Edit, Trash2, Plus, Upload 
 } from "lucide-react";
+import CSVImport from './CSVImport';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
@@ -221,10 +222,11 @@ const AdminPanel = () => {
       </div>
 
       <Tabs defaultValue="users" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3 lg:w-auto">
+        <TabsList className="grid w-full grid-cols-4 lg:w-auto">
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="categories">Categories</TabsTrigger>
-          <TabsTrigger value="exports">Data Export</TabsTrigger>
+          <TabsTrigger value="import">Import</TabsTrigger>
+          <TabsTrigger value="exports">Export</TabsTrigger>
         </TabsList>
 
         {/* Users Tab */}
@@ -347,6 +349,11 @@ const AdminPanel = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Import Tab */}
+        <TabsContent value="import" className="space-y-4">
+          <CSVImport />
         </TabsContent>
 
         {/* Data Export Tab */}
