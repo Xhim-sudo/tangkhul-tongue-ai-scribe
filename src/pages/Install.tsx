@@ -5,10 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Download, Smartphone, CheckCircle, Share, 
   Plus, MoreVertical, ArrowDown, Wifi, WifiOff,
-  Globe, Zap, Bell
+  Globe, Zap, Bell, Terminal, Code, Package
 } from "lucide-react";
 import { motion } from 'framer-motion';
 import { useOfflineQueue } from '@/hooks/useOfflineQueue';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -220,6 +221,87 @@ const Install = () => {
         <Button variant="outline" className="w-full" onClick={() => window.history.back()}>
           Back to Translator
         </Button>
+
+        {/* APK Build Instructions */}
+        <Card className="glass border-accent/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="w-5 h-5 text-accent" />
+              Build Native APK (Android)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="setup" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsTrigger value="setup" className="text-xs">Setup</TabsTrigger>
+                <TabsTrigger value="build" className="text-xs">Build APK</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="setup" className="space-y-3 text-sm">
+                <p className="text-muted-foreground">Prerequisites: Node.js, Android Studio installed</p>
+                
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs">1</Badge>
+                    <span>Export to GitHub via Settings</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs">2</Badge>
+                    <span>Clone and install dependencies</span>
+                  </div>
+                  <code className="block bg-muted/50 p-2 rounded text-xs overflow-x-auto">
+                    git clone [your-repo-url]<br/>
+                    cd tangkhul-tongue-ai-scribe<br/>
+                    npm install
+                  </code>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs">3</Badge>
+                    <span>Add Android platform</span>
+                  </div>
+                  <code className="block bg-muted/50 p-2 rounded text-xs overflow-x-auto">
+                    npx cap add android
+                  </code>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="build" className="space-y-3 text-sm">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs">1</Badge>
+                    <span>Build the web app</span>
+                  </div>
+                  <code className="block bg-muted/50 p-2 rounded text-xs overflow-x-auto">
+                    npm run build
+                  </code>
+                  
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs">2</Badge>
+                    <span>Sync to Android</span>
+                  </div>
+                  <code className="block bg-muted/50 p-2 rounded text-xs overflow-x-auto">
+                    npx cap sync android
+                  </code>
+                  
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs">3</Badge>
+                    <span>Open in Android Studio</span>
+                  </div>
+                  <code className="block bg-muted/50 p-2 rounded text-xs overflow-x-auto">
+                    npx cap open android
+                  </code>
+                  
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs">4</Badge>
+                    <span>Build APK from Android Studio</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Build → Build Bundle(s) / APK(s) → Build APK(s)
+                  </p>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

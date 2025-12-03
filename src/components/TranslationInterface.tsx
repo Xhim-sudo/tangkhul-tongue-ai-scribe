@@ -114,22 +114,22 @@ const TranslationInterface = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <Card className="bg-white/70 backdrop-blur-sm border-orange-200">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-orange-800">
-            <MessageCircle className="w-5 h-5" />
+    <div className="space-y-4 sm:space-y-6 px-1">
+      <Card className="bg-surface/70 backdrop-blur-sm border-primary/20">
+        <CardHeader className="pb-3 sm:pb-6">
+          <CardTitle className="flex items-center gap-2 text-foreground text-lg sm:text-xl">
+            <MessageCircle className="w-5 h-5 text-primary" />
             Community-Powered Translation
           </CardTitle>
-          <p className="text-sm text-gray-600">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             Translations powered by community-verified Tangkhul language data
           </p>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Language Selection */}
-          <div className="flex items-center gap-4">
+        <CardContent className="space-y-4 sm:space-y-6">
+          {/* Language Selection - Mobile Optimized */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
             <Select value={sourceLanguage} onValueChange={setSourceLanguage}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-full sm:w-40">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -142,13 +142,13 @@ const TranslationInterface = () => {
               variant="outline" 
               size="icon"
               onClick={handleSwapLanguages}
-              className="border-orange-200 hover:bg-orange-50"
+              className="border-primary/30 hover:bg-primary/10 self-center"
             >
               <ArrowRightLeft className="w-4 h-4" />
             </Button>
             
             <Select value={targetLanguage} onValueChange={setTargetLanguage}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-full sm:w-40">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -158,46 +158,44 @@ const TranslationInterface = () => {
             </Select>
           </div>
 
-          {/* Translation Interface */}
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="space-y-3">
-              <label className="text-sm font-medium text-gray-700">
+          {/* Translation Interface - Mobile Optimized */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+            <div className="space-y-2 sm:space-y-3">
+              <label className="text-sm font-medium text-foreground">
                 {sourceLanguage === "english" ? "English" : "Tangkhul"}
               </label>
               <Textarea
                 placeholder={`Enter ${sourceLanguage === "english" ? "English" : "Tangkhul"} text here...`}
                 value={sourceText}
                 onChange={(e) => setSourceText(e.target.value)}
-                className="min-h-32 resize-none border-orange-200 focus:border-orange-400"
+                className="min-h-28 sm:min-h-32 resize-none border-primary/30 focus:border-primary"
               />
-              <div className="flex gap-2">
-                <Button 
-                  onClick={handleTranslate} 
-                  disabled={isLoading}
-                  className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700"
-                >
-                  {isLoading ? "Translating..." : "Translate with AI"}
-                </Button>
-              </div>
+              <Button 
+                onClick={handleTranslate} 
+                disabled={isLoading}
+                className="w-full sm:w-auto bg-gradient-to-r from-primary to-accent hover:opacity-90"
+              >
+                {isLoading ? "Translating..." : "Translate"}
+              </Button>
             </div>
 
-            <div className="space-y-3">
-              <label className="text-sm font-medium text-gray-700">
+            <div className="space-y-2 sm:space-y-3">
+              <label className="text-sm font-medium text-foreground">
                 {targetLanguage === "english" ? "English" : "Tangkhul"}
               </label>
               <Textarea
-                placeholder="AI translation will appear here..."
+                placeholder="Translation will appear here..."
                 value={translatedText}
                 readOnly
-                className="min-h-32 resize-none bg-gray-50 border-orange-200"
+                className="min-h-28 sm:min-h-32 resize-none bg-muted/50 border-primary/30"
               />
               {translatedText && (
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Button 
                     variant="outline" 
                     size="sm"
                     onClick={() => handleCopy(translatedText)}
-                    className="border-orange-200 hover:bg-orange-50"
+                    className="border-primary/30 hover:bg-primary/10"
                   >
                     <Copy className="w-4 h-4 mr-2" />
                     Copy
@@ -206,7 +204,7 @@ const TranslationInterface = () => {
                     variant="outline" 
                     size="sm"
                     onClick={() => handleFeedback(true)}
-                    className="border-green-200 hover:bg-green-50"
+                    className="border-success/30 hover:bg-success/10"
                   >
                     <ThumbsUp className="w-4 h-4" />
                   </Button>
@@ -214,7 +212,7 @@ const TranslationInterface = () => {
                     variant="outline" 
                     size="sm"
                     onClick={() => handleFeedback(false)}
-                    className="border-red-200 hover:bg-red-50"
+                    className="border-destructive/30 hover:bg-destructive/10"
                   >
                     <ThumbsDown className="w-4 h-4" />
                   </Button>
@@ -360,21 +358,21 @@ const TranslationInterface = () => {
         </CardContent>
       </Card>
 
-      {/* Common Phrases */}
-      <Card className="bg-white/70 backdrop-blur-sm border-orange-200">
-        <CardHeader>
-          <CardTitle className="text-orange-800">Verified Translations</CardTitle>
-          <p className="text-sm text-gray-600">
+      {/* Common Phrases - Mobile Optimized */}
+      <Card className="bg-surface/70 backdrop-blur-sm border-primary/20">
+        <CardHeader className="pb-3 sm:pb-6">
+          <CardTitle className="text-foreground text-lg sm:text-xl">Verified Translations</CardTitle>
+          <p className="text-xs sm:text-sm text-muted-foreground">
             Community-verified authentic Tangkhul phrases
           </p>
         </CardHeader>
         <CardContent>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
             {commonPhrases.map((phrase: any, index) => (
               <Button
                 key={index}
                 variant="outline"
-                className="p-4 h-auto flex flex-col items-start border-orange-200 hover:bg-orange-50"
+                className="p-3 sm:p-4 h-auto flex flex-col items-start border-primary/20 hover:bg-primary/10 text-left"
                 onClick={() => {
                   setSourceText(phrase.english_text);
                   setTranslatedText(phrase.tangkhul_text);
@@ -382,8 +380,8 @@ const TranslationInterface = () => {
                   setTargetLanguage("tangkhul");
                 }}
               >
-                <span className="font-medium">{phrase.english_text}</span>
-                <span className="text-orange-600 text-sm">{phrase.tangkhul_text}</span>
+                <span className="font-medium text-sm truncate w-full">{phrase.english_text}</span>
+                <span className="text-primary text-xs sm:text-sm truncate w-full">{phrase.tangkhul_text}</span>
               </Button>
             ))}
           </div>

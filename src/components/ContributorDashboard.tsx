@@ -84,9 +84,9 @@ const ContributorDashboard = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="space-y-4 sm:space-y-6 px-1">
+      {/* Stats Overview - Mobile Optimized */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
         <Card className="bg-gradient-to-br from-primary to-primary-dark text-primary-foreground border-0">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
