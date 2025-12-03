@@ -103,14 +103,14 @@ const Leaderboard = () => {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-4 sm:space-y-6 px-1 sm:p-6">
       <div>
-        <h2 className="text-3xl font-bold text-foreground">Contributor Leaderboard</h2>
-        <p className="text-muted-foreground mt-1">Top contributors in the community</p>
+        <h2 className="text-xl sm:text-3xl font-bold text-foreground">Contributor Leaderboard</h2>
+        <p className="text-sm text-muted-foreground mt-1">Top contributors in the community</p>
       </div>
 
-      {/* Sort Options */}
-      <div className="flex flex-wrap gap-2">
+      {/* Sort Options - Mobile Optimized */}
+      <div className="flex flex-wrap gap-2 overflow-x-auto pb-2">
         <Badge
           variant={sortBy === 'accuracy' ? 'default' : 'outline'}
           className="cursor-pointer touch-target"
@@ -148,43 +148,46 @@ const Leaderboard = () => {
               {contributors.map((contributor, index) => (
                 <div
                   key={contributor.id}
-                  className={`flex items-center gap-4 p-4 rounded-lg border transition-all ${
+                  className={`flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg border transition-all ${
                     index < 3
                       ? 'bg-gradient-to-r from-primary/10 to-accent/10 border-primary/30 shadow-glow'
                       : 'bg-muted/30 border-border hover:bg-muted/50'
                   }`}
                 >
-                  {/* Rank */}
-                  <div className="flex items-center justify-center w-12 h-12">
-                    {getRankIcon(index)}
+                  {/* Top row on mobile: Rank + Avatar + Info */}
+                  <div className="flex items-center gap-3 w-full sm:w-auto">
+                    {/* Rank */}
+                    <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0">
+                      {getRankIcon(index)}
+                    </div>
+
+                    {/* Avatar */}
+                    <Avatar className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0">
+                      <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                        {getInitials(contributor.full_name, contributor.email)}
+                      </AvatarFallback>
+                    </Avatar>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-foreground truncate text-sm sm:text-base">
+                        {contributor.full_name || 'Anonymous'}
+                      </h3>
+                      <p className="text-xs sm:text-sm text-muted-foreground truncate">{contributor.email}</p>
+                    </div>
                   </div>
 
-                  {/* Avatar */}
-                  <Avatar className="w-12 h-12">
-                    <AvatarFallback className="bg-primary text-primary-foreground">
-                      {getInitials(contributor.full_name, contributor.email)}
-                    </AvatarFallback>
-                  </Avatar>
-
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-foreground truncate">
-                      {contributor.full_name || 'Anonymous'}
-                    </h3>
-                    <p className="text-sm text-muted-foreground truncate">{contributor.email}</p>
-                  </div>
-
-                  {/* Stats */}
-                  <div className="flex flex-wrap gap-2">
-                    <Badge variant="outline" className="bg-background/50">
+                  {/* Stats - Full width on mobile */}
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2 w-full sm:w-auto sm:ml-auto pl-[52px] sm:pl-0">
+                    <Badge variant="outline" className="bg-background/50 text-xs">
                       <Target className="w-3 h-3 mr-1" />
                       {(contributor.accuracy_score || 0).toFixed(0)}%
                     </Badge>
-                    <Badge variant="outline" className="bg-background/50">
+                    <Badge variant="outline" className="bg-background/50 text-xs">
                       <Star className="w-3 h-3 mr-1" />
                       {contributor.golden_count}
                     </Badge>
-                    <Badge variant="outline" className="bg-background/50">
+                    <Badge variant="outline" className="bg-background/50 text-xs">
                       <Trophy className="w-3 h-3 mr-1" />
                       {contributor.total_submissions || 0}
                     </Badge>

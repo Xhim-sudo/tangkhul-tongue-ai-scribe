@@ -5,10 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { 
-  Users, FolderTree, TrendingUp, Download, 
-  UserCheck, UserX, Edit, Trash2, Plus, Upload 
+  Users, FolderTree, Download, 
+  UserCheck, Plus, Trash2, Activity, LayoutDashboard 
 } from "lucide-react";
 import CSVImport from './CSVImport';
+import AdminDashboard from './admin/AdminDashboard';
+import AdvancedExport from './admin/AdvancedExport';
+import LiveActivityPanel from './admin/LiveActivityPanel';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
@@ -43,13 +46,11 @@ const AdminPanel = () => {
     try {
       setLoading(true);
 
-      // Load users
       const { data: usersData } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
-      // Load categories
       const { data: categoriesData } = await supabase
         .from('training_categories')
         .select('*')
@@ -127,126 +128,75 @@ const AdminPanel = () => {
     }
   };
 
-  const exportData = async (type: 'users' | 'categories' | 'translations') => {
-    try {
-      let data;
-      let filename;
-
-      switch (type) {
-        case 'users':
-          data = users;
-          filename = 'users-export.json';
-          break;
-        case 'categories':
-          data = categories;
-          filename = 'categories-export.json';
-          break;
-        case 'translations':
-          const { data: translations } = await supabase
-            .from('training_entries')
-            .select('*');
-          data = translations;
-          filename = 'translations-export.json';
-          break;
-      }
-
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
-
-      toast.success('Data exported successfully');
-    } catch (error) {
-      console.error('Failed to export data:', error);
-      toast.error('Failed to export data');
-    }
-  };
-
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <div className="text-center text-muted-foreground">Loading admin panel...</div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-4 sm:space-y-6 px-1 sm:p-6">
       <div>
-        <h2 className="text-3xl font-bold text-gradient-primary">Admin Control Panel</h2>
-        <p className="text-muted-foreground mt-1">Manage users, categories, and system settings</p>
+        <h2 className="text-xl sm:text-3xl font-bold text-gradient-primary">Admin Control Panel</h2>
+        <p className="text-sm text-muted-foreground mt-1">Manage users, categories, and system settings</p>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-gradient-to-br from-primary to-primary-dark text-primary-foreground border-0 shadow-glow">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90">Total Users</p>
-                <h3 className="text-3xl font-bold mt-1">{users.length}</h3>
-              </div>
-              <Users className="w-10 h-10 opacity-80" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-accent to-accent-dark text-accent-foreground border-0 shadow-cyan-glow">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90">Categories</p>
-                <h3 className="text-3xl font-bold mt-1">{categories.length}</h3>
-              </div>
-              <FolderTree className="w-10 h-10 opacity-80" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-success to-success-dark text-success-foreground border-0">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90">Active Contributors</p>
-                <h3 className="text-3xl font-bold mt-1">
-                  {users.filter(u => u.role === 'contributor').length}
-                </h3>
-              </div>
-              <UserCheck className="w-10 h-10 opacity-80" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Tabs defaultValue="users" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto">
-          <TabsTrigger value="users">Users</TabsTrigger>
-          <TabsTrigger value="categories">Categories</TabsTrigger>
-          <TabsTrigger value="import">Import</TabsTrigger>
-          <TabsTrigger value="exports">Export</TabsTrigger>
+      <Tabs defaultValue="dashboard" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 gap-1 h-auto p-1">
+          <TabsTrigger value="dashboard" className="text-xs sm:text-sm py-2">
+            <LayoutDashboard className="w-4 h-4 sm:mr-1" />
+            <span className="hidden sm:inline">Dashboard</span>
+          </TabsTrigger>
+          <TabsTrigger value="users" className="text-xs sm:text-sm py-2">
+            <Users className="w-4 h-4 sm:mr-1" />
+            <span className="hidden sm:inline">Users</span>
+          </TabsTrigger>
+          <TabsTrigger value="categories" className="text-xs sm:text-sm py-2">
+            <FolderTree className="w-4 h-4 sm:mr-1" />
+            <span className="hidden sm:inline">Categories</span>
+          </TabsTrigger>
+          <TabsTrigger value="import" className="text-xs sm:text-sm py-2">
+            <Plus className="w-4 h-4 sm:mr-1" />
+            <span className="hidden sm:inline">Import</span>
+          </TabsTrigger>
+          <TabsTrigger value="exports" className="text-xs sm:text-sm py-2">
+            <Download className="w-4 h-4 sm:mr-1" />
+            <span className="hidden sm:inline">Export</span>
+          </TabsTrigger>
+          <TabsTrigger value="live" className="text-xs sm:text-sm py-2">
+            <Activity className="w-4 h-4 sm:mr-1" />
+            <span className="hidden sm:inline">Live</span>
+          </TabsTrigger>
         </TabsList>
+
+        {/* Dashboard Tab */}
+        <TabsContent value="dashboard">
+          <AdminDashboard />
+        </TabsContent>
 
         {/* Users Tab */}
         <TabsContent value="users" className="space-y-4">
           <Card className="glass border-primary/20">
             <CardHeader>
-              <CardTitle>User Management</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                User Management ({users.length})
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {users.map((user) => (
                   <div
                     key={user.id}
-                    className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-lg border border-border bg-surface hover:bg-surface-dark transition-colors"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 sm:p-4 rounded-lg border border-border bg-surface hover:bg-surface-dark transition-colors"
                   >
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-foreground truncate">
+                      <h3 className="font-semibold text-foreground truncate text-sm sm:text-base">
                         {user.full_name || 'Anonymous'}
                       </h3>
-                      <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground truncate">{user.email}</p>
                       {user.staff_id && (
                         <p className="text-xs text-muted-foreground mt-1">ID: {user.staff_id}</p>
                       )}
@@ -257,7 +207,7 @@ const AdminPanel = () => {
                         value={user.role}
                         onValueChange={(value) => handleRoleChange(user.id, value)}
                       >
-                        <SelectTrigger className="w-[140px]">
+                        <SelectTrigger className="w-[120px] sm:w-[140px] text-xs sm:text-sm">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -268,7 +218,10 @@ const AdminPanel = () => {
                         </SelectContent>
                       </Select>
 
-                      <Badge variant={user.role === 'admin' ? 'default' : 'outline'}>
+                      <Badge 
+                        variant={user.role === 'admin' ? 'default' : 'outline'}
+                        className="text-xs"
+                      >
                         {user.role}
                       </Badge>
                     </div>
@@ -283,16 +236,19 @@ const AdminPanel = () => {
         <TabsContent value="categories" className="space-y-4">
           <Card className="glass border-primary/20">
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Category Management</CardTitle>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <CardTitle className="flex items-center gap-2">
+                  <FolderTree className="w-5 h-5" />
+                  Categories ({categories.length})
+                </CardTitle>
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button className="bg-primary text-primary-foreground hover:bg-primary-dark">
+                    <Button className="bg-primary text-primary-foreground hover:bg-primary-dark w-full sm:w-auto">
                       <Plus className="w-4 h-4 mr-2" />
                       Add Category
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="mx-4 sm:mx-0">
                     <DialogHeader>
                       <DialogTitle>Create New Category</DialogTitle>
                     </DialogHeader>
@@ -328,19 +284,19 @@ const AdminPanel = () => {
                 {categories.map((category) => (
                   <div
                     key={category.id}
-                    className="flex items-start justify-between p-4 rounded-lg border border-border bg-surface hover:bg-surface-dark transition-colors"
+                    className="flex items-start justify-between p-3 sm:p-4 rounded-lg border border-border bg-surface hover:bg-surface-dark transition-colors"
                   >
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-foreground">{category.name}</h3>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-foreground text-sm sm:text-base">{category.name}</h3>
                       {category.description && (
-                        <p className="text-sm text-muted-foreground mt-1">{category.description}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-2">{category.description}</p>
                       )}
                     </div>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleDeleteCategory(category.id)}
-                      className="text-destructive hover:text-destructive-foreground hover:bg-destructive"
+                      className="text-destructive hover:text-destructive-foreground hover:bg-destructive flex-shrink-0"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -356,43 +312,14 @@ const AdminPanel = () => {
           <CSVImport />
         </TabsContent>
 
-        {/* Data Export Tab */}
+        {/* Export Tab */}
         <TabsContent value="exports" className="space-y-4">
-          <Card className="glass border-primary/20">
-            <CardHeader>
-              <CardTitle>Data Export</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Button
-                  onClick={() => exportData('users')}
-                  variant="outline"
-                  className="h-24 flex-col border-primary hover:bg-primary hover:text-primary-foreground"
-                >
-                  <Download className="w-8 h-8 mb-2" />
-                  <span>Export Users</span>
-                </Button>
+          <AdvancedExport />
+        </TabsContent>
 
-                <Button
-                  onClick={() => exportData('categories')}
-                  variant="outline"
-                  className="h-24 flex-col border-accent hover:bg-accent hover:text-accent-foreground"
-                >
-                  <Download className="w-8 h-8 mb-2" />
-                  <span>Export Categories</span>
-                </Button>
-
-                <Button
-                  onClick={() => exportData('translations')}
-                  variant="outline"
-                  className="h-24 flex-col border-success hover:bg-success hover:text-success-foreground"
-                >
-                  <Download className="w-8 h-8 mb-2" />
-                  <span>Export Translations</span>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Live Activity Tab */}
+        <TabsContent value="live" className="space-y-4">
+          <LiveActivityPanel />
         </TabsContent>
       </Tabs>
     </div>
