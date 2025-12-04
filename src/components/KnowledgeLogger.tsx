@@ -1,17 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { useTranslation } from '@/hooks/useTranslation';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-// import UserStats from './training/UserStats';
 import TrainingForm from './training/TrainingForm';
 import CommunityOverview from './training/CommunityOverview';
-import TrainingEntriesList from './training/TrainingEntriesList';
 
 const KnowledgeLogger = () => {
-  const [trainingEntries, setTrainingEntries] = useState<any[]>([]);
   const [userStats, setUserStats] = useState({
     totalContributions: 0,
     accuracy: 0,
@@ -24,16 +17,13 @@ const KnowledgeLogger = () => {
     contributors: 10,
     averageConfidence: 100
   });
-  const { submitTrainingData } = useTranslation();
   const { user } = useAuth();
 
-  // Load training entries and user stats with real-time updates
   useEffect(() => {
     if (user) {
       loadUserStats();
       loadCommunityStats();
       
-      // Set up real-time subscription for submissions
       const channel = supabase
         .channel('training-submissions-changes')
         .on(
@@ -56,37 +46,30 @@ const KnowledgeLogger = () => {
     }
   }, [user]);
 
-
   const loadUserStats = async () => {
     if (!user) return;
 
     try {
-      // Get user's submissions count
-      const { count: submissionsCount, error: submissionsError } = await supabase
+      const { count: submissionsCount } = await supabase
         .from('training_submissions_log')
         .select('*', { count: 'exact', head: true })
         .eq('contributor_id', user.id);
 
-      if (submissionsError) throw submissionsError;
-
-      // Calculate accuracy based on consensus matches
-      const { data: userSubmissions, error: userSubmissionsError } = await supabase
+      const { data: userSubmissions } = await supabase
         .from('training_submissions_log')
         .select('english_text, tangkhul_text')
         .eq('contributor_id', user.id);
 
-      if (userSubmissionsError) throw userSubmissionsError;
-
       let accurateSubmissions = 0;
       for (const submission of userSubmissions || []) {
-        const { data: consensus, error: consensusError } = await supabase
+        const { data: consensus } = await supabase
           .from('translation_consensus')
           .select('agreement_score')
           .eq('english_text', submission.english_text)
           .eq('tangkhul_text', submission.tangkhul_text)
-          .single();
+          .maybeSingle();
 
-        if (!consensusError && consensus && consensus.agreement_score >= 80) {
+        if (consensus && consensus.agreement_score >= 80) {
           accurateSubmissions++;
         }
       }
@@ -99,7 +82,7 @@ const KnowledgeLogger = () => {
         totalContributions: submissionsCount || 0,
         accuracy: Math.round(accuracy * 100) / 100,
         goldenEntries: accurateSubmissions,
-        rank: 1 // Simplified for now
+        rank: 1
       });
     } catch (error) {
       console.error('Failed to load user stats:', error);
@@ -108,17 +91,14 @@ const KnowledgeLogger = () => {
 
   const loadCommunityStats = async () => {
     try {
-      // Get total submissions
       const { count: totalSubmissions } = await supabase
         .from('training_submissions_log')
         .select('*', { count: 'exact', head: true });
 
-      // Get consensus data
       const { data: consensusData } = await supabase
         .from('translation_consensus')
         .select('*');
 
-      // Get unique contributors
       const { data: contributorData } = await supabase
         .from('training_submissions_log')
         .select('contributor_id');
@@ -146,48 +126,16 @@ const KnowledgeLogger = () => {
     tags: string;
     partOfSpeech: string;
   }) => {
-    if (!user) return;
-
-    try {
-      const tagsArray = formData.tags
-        ? formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
-        : [];
-
-      // Generate hash for the English text
-      const encoder = new TextEncoder();
-      const data = encoder.encode(formData.englishText.toLowerCase().trim());
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-      const { error } = await supabase
-        .from('training_submissions_log')
-        .insert({
-          english_text: formData.englishText,
-          tangkhul_text: formData.tangkhulText,
-          category: formData.category,
-          context: formData.context || null,
-          tags: tagsArray,
-          contributor_id: user.id,
-          submission_hash: hashHex
-        });
-
-      if (error) throw error;
-
-      // Stats will reload automatically via real-time subscription
-    } catch (error: any) {
-      console.error('Failed to save entry:', error);
-    }
+    // The TrainingForm now handles the submission directly
+    // This is just for any additional processing needed
+    loadUserStats();
+    loadCommunityStats();
   };
 
   return (
-    <div className="space-y-6">
-      {/* Training Form */}
+    <div className="space-y-6 px-4 sm:px-0">
       <TrainingForm onSubmit={handleTrainingSubmit} />
-
-      {/* Community Overview */}
       <CommunityOverview stats={communityStats} />
-
     </div>
   );
 };

@@ -7,6 +7,7 @@ interface MobileHeaderProps {
   onBack?: () => void;
   showSearch?: boolean;
   onSearchClick?: () => void;
+  onNotificationClick?: () => void;
   notificationCount?: number;
 }
 
@@ -15,6 +16,7 @@ export default function MobileHeader({
   onBack,
   showSearch = false,
   onSearchClick,
+  onNotificationClick,
   notificationCount = 0,
 }: MobileHeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -48,8 +50,8 @@ export default function MobileHeader({
   return (
     <header
       className={cn(
-        "sticky top-0 z-40 transition-all duration-300 safe-top",
-        isScrolled && "glass shadow-medium",
+        "fixed top-0 left-0 right-0 z-40 transition-all duration-300 safe-top bg-background/95 backdrop-blur-sm",
+        isScrolled && "shadow-md",
         isHidden && "-translate-y-full"
       )}
     >
@@ -64,7 +66,7 @@ export default function MobileHeader({
               <ArrowLeft className="w-5 h-5" />
             </button>
           )}
-          <h1 className="text-lg font-bold truncate bg-clip-text">{title}</h1>
+          <h1 className="text-lg font-bold truncate">{title}</h1>
         </div>
 
         <div className="flex items-center gap-1">
@@ -79,12 +81,15 @@ export default function MobileHeader({
           )}
           
           <button 
+            onClick={onNotificationClick}
             className="p-2.5 hover:bg-accent/80 rounded-xl transition-all active:scale-95 relative touch-target"
             aria-label={`Notifications${notificationCount > 0 ? ` (${notificationCount})` : ''}`}
           >
             <Bell className="w-5 h-5" />
             {notificationCount > 0 && (
-              <span className="absolute top-2 right-2 w-2 h-2 bg-destructive rounded-full animate-pulse" />
+              <span className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] bg-destructive text-destructive-foreground text-xs font-bold rounded-full flex items-center justify-center">
+                {notificationCount > 9 ? '9+' : notificationCount}
+              </span>
             )}
           </button>
         </div>

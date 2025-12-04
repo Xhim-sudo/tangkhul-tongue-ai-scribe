@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import Navigation from "@/components/Navigation";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -21,14 +21,51 @@ import { useIsMobileView } from "@/lib/breakpoints";
 import BottomNav from "@/components/mobile/BottomNav";
 import MobileHeader from "@/components/mobile/MobileHeader";
 import MobileRouter from "@/components/mobile/MobileRouter";
-import TrainingScreenMobile from "@/components/mobile/TrainingScreenMobile";
-import ProfileScreenMobile from "@/components/mobile/ProfileScreenMobile";
+import MobileSearchDrawer from "@/components/mobile/MobileSearchDrawer";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
-  const { hasRole } = useAuth();
+  const { hasRole, user } = useAuth();
   const { logError } = useError();
   const [activeTab, setActiveTab] = useState("translate");
+  const [showSearch, setShowSearch] = useState(false);
+  const [notificationCount, setNotificationCount] = useState(0);
   const isMobile = useIsMobileView();
+
+  // Load unread notification count
+  useEffect(() => {
+    if (user?.id) {
+      loadNotificationCount();
+      
+      const channel = supabase
+        .channel('notification-count')
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'notifications',
+          filter: `to_user_id=eq.${user.id}`
+        }, () => {
+          loadNotificationCount();
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [user?.id]);
+
+  const loadNotificationCount = async () => {
+    if (!user?.id) return;
+    
+    const { count } = await supabase
+      .from('notifications')
+      .select('*', { count: 'exact', head: true })
+      .eq('to_user_id', user.id)
+      .eq('read', false);
+    
+    setNotificationCount(count || 0);
+  };
 
   const renderContent = () => {
     const content = (() => {
@@ -49,25 +86,25 @@ const Index = () => {
           return <NotificationsPanel />;
         case "analytics":
           return hasRole('admin') || hasRole('expert') || hasRole('reviewer') ? 
-            <TranslationAnalytics /> : <div>Access denied</div>;
+            <TranslationAnalytics /> : <div className="p-4 text-center">Access denied</div>;
         case "charts":
           return hasRole('admin') || hasRole('expert') || hasRole('reviewer') ? 
-            <AnalyticsCharts /> : <div>Access denied</div>;
+            <AnalyticsCharts /> : <div className="p-4 text-center">Access denied</div>;
         case "review":
           return hasRole('admin') || hasRole('expert') || hasRole('reviewer') ? 
-            <ReviewerWorkflow /> : <div>Access denied</div>;
+            <ReviewerWorkflow /> : <div className="p-4 text-center">Access denied</div>;
         case "collaborate":
           return hasRole('admin') || hasRole('expert') || hasRole('reviewer') ? 
-            <CollaborativeReview /> : <div>Access denied</div>;
+            <CollaborativeReview /> : <div className="p-4 text-center">Access denied</div>;
         case "dashboard":
           return hasRole('admin') || hasRole('expert') || hasRole('reviewer') ? 
-            <AccuracyDashboard /> : <div>Access denied</div>;
+            <AccuracyDashboard /> : <div className="p-4 text-center">Access denied</div>;
         case "admin":
           return hasRole('admin') ? 
-            <AdminPanel /> : <div>Access denied</div>;
+            <AdminPanel /> : <div className="p-4 text-center">Access denied</div>;
         case "management":
           return hasRole('admin') ? 
-            <ManagementPortal /> : <div>Access denied</div>;
+            <ManagementPortal /> : <div className="p-4 text-center">Access denied</div>;
         default:
           return <TranslationInterface />;
       }
@@ -76,7 +113,7 @@ const Index = () => {
     return (
       <ErrorBoundary 
         onError={(error, errorInfo) => logError(error, `Index.${activeTab}`)}
-        key={activeTab} // Force remount on tab change
+        key={activeTab}
       >
         {content}
       </ErrorBoundary>
@@ -107,18 +144,28 @@ const Index = () => {
 
     return (
       <div className="min-h-screen bg-background">
-        <MobileHeader title={getHeaderTitle()} showSearch />
+        <MobileHeader 
+          title={getHeaderTitle()} 
+          showSearch 
+          onSearchClick={() => setShowSearch(true)}
+          onNotificationClick={() => setActiveTab('notifications')}
+          notificationCount={notificationCount}
+        />
         <MobileRouter activeTab={activeTab}>
           {renderContent()}
         </MobileRouter>
         <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+        <MobileSearchDrawer 
+          isOpen={showSearch} 
+          onClose={() => setShowSearch(false)} 
+        />
       </div>
     );
   }
 
   // Desktop layout
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 dark:from-background dark:to-background">
       <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

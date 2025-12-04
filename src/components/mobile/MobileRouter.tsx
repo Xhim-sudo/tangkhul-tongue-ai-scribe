@@ -28,6 +28,7 @@ export default function MobileRouter({ activeTab, children }: MobileRouterProps)
         exit="exit"
         variants={pageVariants}
         transition={pageTransition}
+        className="pt-16 pb-24 px-4 min-h-screen overflow-y-auto"
       >
         {children}
       </motion.div>

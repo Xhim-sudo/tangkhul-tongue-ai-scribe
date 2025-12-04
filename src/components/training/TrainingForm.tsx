@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,11 +35,9 @@ const TrainingForm = ({ onSubmit, isLoading = false }: TrainingFormProps) => {
   
   const { isOnline, addToQueue, queueLength } = useOfflineQueue();
 
-  // Load categories from database with real-time updates
   useEffect(() => {
     loadCategories();
     
-    // Set up real-time subscription for categories
     const channel = supabase
       .channel('training-categories-changes')
       .on(
@@ -68,23 +65,28 @@ const TrainingForm = ({ onSubmit, isLoading = false }: TrainingFormProps) => {
         .select('id, name')
         .order('name');
       
-      if (data) {
+      if (data && data.length > 0) {
         setCategories(data);
+      } else {
+        setCategories([
+          { id: 'greetings', name: 'greetings' },
+          { id: 'expressions', name: 'expressions' },
+          { id: 'numbers', name: 'numbers' },
+          { id: 'colors', name: 'colors' },
+          { id: 'family', name: 'family' },
+          { id: 'food', name: 'food' },
+          { id: 'nature', name: 'nature' },
+          { id: 'time', name: 'time' },
+          { id: 'directions', name: 'directions' },
+          { id: 'emotions', name: 'emotions' }
+        ]);
       }
     } catch (error) {
       console.error('Failed to load categories:', error);
-      // Fallback to default categories if database query fails
       setCategories([
-        { id: '1', name: 'greetings' },
-        { id: '2', name: 'expressions' },
-        { id: '3', name: 'numbers' },
-        { id: '4', name: 'colors' },
-        { id: '5', name: 'family' },
-        { id: '6', name: 'food' },
-        { id: '7', name: 'nature' },
-        { id: '8', name: 'time' },
-        { id: '9', name: 'directions' },
-        { id: '10', name: 'emotions' }
+        { id: 'greetings', name: 'greetings' },
+        { id: 'expressions', name: 'expressions' },
+        { id: 'numbers', name: 'numbers' }
       ]);
     }
   };
@@ -92,7 +94,6 @@ const TrainingForm = ({ onSubmit, isLoading = false }: TrainingFormProps) => {
   const handleSubmit = async () => {
     if (!englishText.trim() || !tangkhulText.trim()) return;
 
-    // If offline, add to queue
     if (!isOnline) {
       addToQueue({
         english_text: englishText.trim(),
@@ -101,7 +102,6 @@ const TrainingForm = ({ onSubmit, isLoading = false }: TrainingFormProps) => {
         is_golden_data: false
       });
 
-      // Clear form
       setEnglishText("");
       setTangkhulText("");
       setCategory("");
@@ -117,7 +117,6 @@ const TrainingForm = ({ onSubmit, isLoading = false }: TrainingFormProps) => {
       return;
     }
 
-    // 1) Call existing onSubmit to preserve current behavior
     onSubmit({
       englishText,
       tangkhulText,
@@ -127,47 +126,49 @@ const TrainingForm = ({ onSubmit, isLoading = false }: TrainingFormProps) => {
       partOfSpeech: partOfSpeech || 'unknown'
     });
 
-    // 2) Also log to Knowledge Log (training_submissions_log)
     try {
       const { data: userRes } = await supabase.auth.getUser();
       const contributorId = userRes?.user?.id;
       if (!contributorId) {
         console.warn('User not authenticated, skipping knowledge log insert.');
       } else {
-        const tagsArray = tags
-          .split(',')
-          .map(t => t.trim())
-          .filter(Boolean);
+        // Find category_id from categories
+        const selectedCategory = categories.find(c => c.name === category || c.id === category);
+        const categoryId = selectedCategory?.id;
 
-        // Simple non-cryptographic hash string to satisfy NOT NULL requirement
-        const submissionHash = `${englishText.trim().toLowerCase()}|${tangkhulText.trim().toLowerCase()}|${(category || 'general').trim().toLowerCase()}|${Date.now()}`;
+        // Build grammar features with extra info
+        const fullGrammarFeatures = {
+          ...grammaticalFeatures,
+          part_of_speech: partOfSpeech || 'unknown',
+          tags: tags.split(',').map(t => t.trim()).filter(Boolean)
+        };
 
-        const { error: logErr } = await (supabase as any)
+        const { error: logErr } = await supabase
           .from('training_submissions_log')
           .insert({
             contributor_id: contributorId,
-            english_text: englishText,
-            tangkhul_text: tangkhulText,
-            category: category || 'general',
-            context: context || null,
-            tags: tagsArray.length ? tagsArray : null,
-            part_of_speech: partOfSpeech || 'unknown',
-            grammatical_features: grammaticalFeatures || {},
-            submission_hash: submissionHash,
-            confidence_score: 85
+            english_text: englishText.trim(),
+            tangkhul_text: tangkhulText.trim(),
+            category_id: categoryId && categoryId.length === 36 ? categoryId : null,
+            linguistic_notes: context || null,
+            grammar_features: fullGrammarFeatures,
+            is_golden_data: false
           });
 
         if (logErr) {
           console.error('Knowledge log insert failed:', logErr);
-        } else {
-          console.log('Submission saved to knowledge log');
+          toast({
+            title: "Submission Failed",
+            description: logErr.message,
+            variant: "destructive"
+          });
+          return;
         }
       }
     } catch (e) {
       console.error('Unexpected error logging submission:', e);
     }
 
-    // Clear form
     setEnglishText("");
     setTangkhulText("");
     setCategory("");
@@ -178,46 +179,46 @@ const TrainingForm = ({ onSubmit, isLoading = false }: TrainingFormProps) => {
 
     toast({
       title: "Submitted",
-      description: "Your contribution has been submitted and logged to the knowledge base.",
+      description: "Your contribution has been submitted successfully.",
     });
   };
 
   return (
     <Card className="glass border-primary/20">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-foreground">
-            <Plus className="w-5 h-5 text-primary" />
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <CardTitle className="flex items-center gap-2 text-foreground text-base sm:text-lg">
+            <Plus className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
             Contribute Training Data
           </CardTitle>
           <div className="flex items-center gap-2">
             {!isOnline && (
-              <Badge variant="outline" className="text-warning border-warning">
+              <Badge variant="outline" className="text-warning border-warning text-xs">
                 <WifiOff className="w-3 h-3 mr-1" />
-                Offline Mode
+                Offline
               </Badge>
             )}
             {queueLength > 0 && (
-              <Badge variant="secondary">
+              <Badge variant="secondary" className="text-xs">
                 <Cloud className="w-3 h-3 mr-1" />
                 {queueLength} pending
               </Badge>
             )}
           </div>
         </div>
-        <p className="text-sm text-muted-foreground">
-          Your contributions help build the AI model. {!isOnline && "Entries will sync when online."}
+        <p className="text-xs sm:text-sm text-muted-foreground">
+          Your contributions help build the AI model.
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">English Text</label>
             <Textarea
               placeholder="Enter English text..."
               value={englishText}
               onChange={(e) => setEnglishText(e.target.value)}
-              className="border-border focus:border-primary"
+              className="border-border focus:border-primary min-h-[80px]"
             />
           </div>
           <div className="space-y-2">
@@ -226,21 +227,21 @@ const TrainingForm = ({ onSubmit, isLoading = false }: TrainingFormProps) => {
               placeholder="Enter accurate Tangkhul translation..."
               value={tangkhulText}
               onChange={(e) => setTangkhulText(e.target.value)}
-              className="border-border focus:border-primary"
+              className="border-border focus:border-primary min-h-[80px]"
             />
           </div>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Category</label>
             <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="border-border">
+              <SelectTrigger className="border-border w-full">
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
               <SelectContent>
                 {categories.map(cat => (
-                  <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                  <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -251,10 +252,10 @@ const TrainingForm = ({ onSubmit, isLoading = false }: TrainingFormProps) => {
               placeholder="When and how is this used?"
               value={context}
               onChange={(e) => setContext(e.target.value)}
-              className="border-border focus:border-primary h-10"
+              className="border-border focus:border-primary min-h-[40px]"
             />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 sm:col-span-2 lg:col-span-1">
             <label className="text-sm font-medium text-foreground">Tags (comma separated)</label>
             <Input
               placeholder="formal, casual, question"
@@ -265,11 +266,11 @@ const TrainingForm = ({ onSubmit, isLoading = false }: TrainingFormProps) => {
           </div>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Part of Speech</label>
             <Select value={partOfSpeech} onValueChange={setPartOfSpeech}>
-              <SelectTrigger className="border-border">
+              <SelectTrigger className="border-border w-full">
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
               <SelectContent>
@@ -283,8 +284,8 @@ const TrainingForm = ({ onSubmit, isLoading = false }: TrainingFormProps) => {
               </SelectContent>
             </Select>
           </div>
-          <div className="md:col-span-2 space-y-2">
-            <label className="text-sm font-medium text-foreground">Grammar usage and functions</label>
+          <div className="sm:col-span-1 lg:col-span-2 space-y-2">
+            <label className="text-sm font-medium text-foreground">Grammar Features</label>
             <GrammarFeaturesInput
               partOfSpeech={partOfSpeech || 'unknown'}
               value={grammaticalFeatures}
@@ -293,13 +294,13 @@ const TrainingForm = ({ onSubmit, isLoading = false }: TrainingFormProps) => {
           </div>
         </div>
 
-        <div className="flex justify-between items-center">
-          <div className="text-sm text-muted-foreground">
-            💡 Tip: Multiple submissions help determine accuracy through consensus
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <div className="text-xs sm:text-sm text-muted-foreground">
+            💡 Multiple submissions help determine accuracy
           </div>
           <Button 
             onClick={handleSubmit}
-            className="bg-gradient-to-r from-primary to-accent hover:opacity-90"
+            className="w-full sm:w-auto bg-gradient-to-r from-primary to-accent hover:opacity-90"
             disabled={!englishText.trim() || !tangkhulText.trim() || isLoading}
           >
             {isOnline ? (
