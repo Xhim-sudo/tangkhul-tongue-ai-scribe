@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   Bell, Send, AtSign, Check, Trash2, 
-  MessageSquare, UserPlus, Award 
+  MessageSquare, Award 
 } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,22 +21,27 @@ import {
 
 interface Notification {
   id: string;
-  type: 'message' | 'mention' | 'approval' | 'achievement';
+  type: string;
   from_user_id: string;
   to_user_id: string;
   message: string;
   read: boolean;
   created_at: string;
-  from_user?: {
-    full_name: string | null;
-    email: string;
-  };
+  from_user_name?: string;
+  from_user_email?: string;
+}
+
+interface UserProfile {
+  id: string;
+  full_name: string | null;
+  email: string;
+  role: string;
 }
 
 const NotificationsPanel = () => {
-  const { user, userProfile } = useAuth();
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<UserProfile[]>([]);
   const [selectedUser, setSelectedUser] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
@@ -48,7 +51,6 @@ const NotificationsPanel = () => {
       loadNotifications();
       loadUsers();
       
-      // Set up real-time subscription for notifications
       const channel = supabase
         .channel('notifications-changes')
         .on('postgres_changes', { 
@@ -73,31 +75,46 @@ const NotificationsPanel = () => {
     try {
       setLoading(true);
 
-      const { data, error } = await supabase
+      // Get notifications
+      const { data: notifData, error: notifError } = await supabase
         .from('notifications')
-        .select(`
-          *,
-          from_profile:profiles!notifications_from_user_id_fkey(full_name, email)
-        `)
+        .select('*')
         .eq('to_user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(50);
 
-      if (error) throw error;
+      if (notifError) throw notifError;
 
-      const formatted = (data || []).map((notif: any) => ({
-        id: notif.id,
-        type: notif.type,
-        from_user_id: notif.from_user_id,
-        to_user_id: notif.to_user_id,
-        message: notif.message,
-        read: notif.read,
-        created_at: notif.created_at,
-        from_user: {
-          full_name: notif.from_profile?.full_name,
-          email: notif.from_profile?.email
-        }
-      }));
+      if (!notifData || notifData.length === 0) {
+        setNotifications([]);
+        return;
+      }
+
+      // Get unique from_user_ids
+      const fromUserIds = [...new Set(notifData.map(n => n.from_user_id))];
+      
+      // Fetch profiles for those users
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', fromUserIds);
+
+      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+
+      const formatted: Notification[] = notifData.map((notif) => {
+        const fromProfile = profileMap.get(notif.from_user_id);
+        return {
+          id: notif.id,
+          type: notif.type,
+          from_user_id: notif.from_user_id,
+          to_user_id: notif.to_user_id,
+          message: notif.message,
+          read: notif.read,
+          created_at: notif.created_at,
+          from_user_name: fromProfile?.full_name || null,
+          from_user_email: fromProfile?.email || 'Unknown'
+        };
+      });
 
       setNotifications(formatted);
     } catch (error) {
@@ -156,7 +173,6 @@ const NotificationsPanel = () => {
         .eq('id', id);
 
       if (error) throw error;
-
       loadNotifications();
     } catch (error) {
       console.error('Failed to mark as read:', error);
@@ -171,7 +187,6 @@ const NotificationsPanel = () => {
         .eq('id', id);
 
       if (error) throw error;
-
       toast.success('Notification deleted');
       loadNotifications();
     } catch (error) {
@@ -196,41 +211,41 @@ const NotificationsPanel = () => {
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'mention':
-        return 'from-accent to-accent-dark';
+        return 'bg-accent';
       case 'approval':
-        return 'from-success to-success-dark';
+        return 'bg-green-500';
       case 'achievement':
-        return 'from-primary to-primary-dark';
+        return 'bg-primary';
       default:
-        return 'from-secondary to-secondary-dark';
+        return 'bg-secondary';
     }
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 p-6">
+    <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6 p-4 sm:p-6 pt-16 pb-24 sm:pt-6 sm:pb-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold text-gradient-primary">Notifications</h2>
-          <p className="text-muted-foreground mt-1">
-            {unreadCount > 0 && `${unreadCount} unread message${unreadCount > 1 ? 's' : ''}`}
+          <h2 className="text-xl sm:text-3xl font-bold text-foreground">Notifications</h2>
+          <p className="text-muted-foreground text-sm mt-1">
+            {unreadCount > 0 && `${unreadCount} unread`}
           </p>
         </div>
-        <Bell className="w-8 h-8 text-primary" />
+        <Bell className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Send Message Card */}
-        <Card className="lg:col-span-1 glass border-primary/20 h-fit">
-          <CardHeader>
-            <CardTitle className="text-lg">Send Message</CardTitle>
+        <Card className="lg:col-span-1 glass border-primary/20">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base sm:text-lg">Send Message</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
               <label className="text-sm font-medium mb-2 block">To:</label>
               <Select value={selectedUser} onValueChange={setSelectedUser}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select user" />
                 </SelectTrigger>
                 <SelectContent>
@@ -239,7 +254,7 @@ const NotificationsPanel = () => {
                     .map((u) => (
                       <SelectItem key={u.id} value={u.id}>
                         <div className="flex items-center gap-2">
-                          <span>{u.full_name || u.email}</span>
+                          <span className="truncate">{u.full_name || u.email}</span>
                           <Badge variant="outline" className="text-xs">
                             {u.role}
                           </Badge>
@@ -255,28 +270,28 @@ const NotificationsPanel = () => {
               <Textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Type your message... Use @ to mention"
-                className="min-h-[100px]"
+                placeholder="Type your message..."
+                className="min-h-[80px]"
               />
             </div>
 
             <Button 
               onClick={handleSendMessage}
-              className="w-full bg-primary hover:bg-primary-dark"
+              className="w-full bg-primary hover:bg-primary/90"
             >
               <Send className="w-4 h-4 mr-2" />
-              Send Message
+              Send
             </Button>
           </CardContent>
         </Card>
 
         {/* Notifications List */}
         <Card className="lg:col-span-2 glass border-primary/20">
-          <CardHeader>
-            <CardTitle className="text-lg">Recent Notifications</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base sm:text-lg">Recent Notifications</CardTitle>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-[600px] pr-4">
+            <ScrollArea className="h-[400px] sm:h-[500px] pr-2">
               {loading ? (
                 <p className="text-center text-muted-foreground py-8">Loading...</p>
               ) : notifications.length === 0 ? (
@@ -286,52 +301,48 @@ const NotificationsPanel = () => {
                   {notifications.map((notif) => (
                     <div
                       key={notif.id}
-                      className={`p-4 rounded-lg border transition-all ${
+                      className={`p-3 sm:p-4 rounded-lg border transition-all ${
                         notif.read 
-                          ? 'bg-surface border-border' 
-                          : 'bg-gradient-to-r ' + getTypeColor(notif.type) + ' border-transparent text-white shadow-glow'
+                          ? 'bg-muted/30 border-border' 
+                          : 'bg-primary/10 border-primary/30'
                       }`}
                     >
                       <div className="flex items-start gap-3">
-                        <div className={`p-2 rounded-full ${notif.read ? 'bg-muted' : 'bg-white/20'}`}>
+                        <div className={`p-2 rounded-full ${getTypeColor(notif.type)} text-white shrink-0`}>
                           {getIcon(notif.type)}
                         </div>
 
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <p className={`font-semibold ${notif.read ? 'text-foreground' : 'text-white'}`}>
-                                {notif.from_user?.full_name || notif.from_user?.email}
-                              </p>
-                              <p className={`text-sm ${notif.read ? 'text-muted-foreground' : 'text-white/90'}`}>
-                                {notif.message}
-                              </p>
-                              <p className={`text-xs mt-1 ${notif.read ? 'text-muted-foreground' : 'text-white/70'}`}>
-                                {new Date(notif.created_at).toLocaleString()}
-                              </p>
-                            </div>
+                          <p className="font-semibold text-sm sm:text-base truncate">
+                            {notif.from_user_name || notif.from_user_email}
+                          </p>
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {notif.message}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {new Date(notif.created_at).toLocaleString()}
+                          </p>
+                        </div>
 
-                            <div className="flex gap-1">
-                              {!notif.read && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleMarkAsRead(notif.id)}
-                                  className={notif.read ? '' : 'text-white hover:bg-white/20'}
-                                >
-                                  <Check className="w-4 h-4" />
-                                </Button>
-                              )}
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleDelete(notif.id)}
-                                className={notif.read ? '' : 'text-white hover:bg-white/20'}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </div>
+                        <div className="flex gap-1 shrink-0">
+                          {!notif.read && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => handleMarkAsRead(notif.id)}
+                              className="h-8 w-8"
+                            >
+                              <Check className="w-4 h-4" />
+                            </Button>
+                          )}
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handleDelete(notif.id)}
+                            className="h-8 w-8 text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </div>
                       </div>
                     </div>

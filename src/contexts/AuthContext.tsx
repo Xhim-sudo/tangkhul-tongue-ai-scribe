@@ -48,6 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [userRoles, setUserRoles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -63,10 +64,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Handle profile fetching separately with timeout
         if (session?.user) {
           console.log('👤 User authenticated, fetching profile...');
-          fetchUserProfileWithTimeout(session.user.id);
+          setTimeout(() => {
+            fetchUserProfileWithTimeout(session.user.id);
+            fetchUserRoles(session.user.id);
+          }, 0);
         } else {
           console.log('👋 User signed out, clearing profile');
           setUserProfile(null);
+          setUserRoles([]);
           setLoading(false);
         }
       }
@@ -86,8 +91,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         console.log('📝 Initial session:', session?.user?.id || 'No session');
         
-        // Don't set session here as onAuthStateChange will handle it
-        // Just ensure loading stops if no session
         if (!session) {
           setLoading(false);
         }
@@ -105,8 +108,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
+  const fetchUserRoles = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('Failed to fetch user roles:', error);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        console.log('✅ User roles found:', data.map(r => r.role));
+        setUserRoles(data.map(r => r.role));
+      }
+    } catch (error) {
+      console.error('Failed to fetch user roles:', error);
+    }
+  };
+
   const fetchUserProfileWithTimeout = async (userId: string) => {
-    const timeoutMs = 5000; // 5 second timeout
+    const timeoutMs = 5000;
     
     const fetchPromise = fetchUserProfile(userId);
     const timeoutPromise = new Promise((_, reject) => 
@@ -117,7 +141,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await Promise.race([fetchPromise, timeoutPromise]);
     } catch (error) {
       console.error('⏰ Profile fetch failed or timed out:', error);
-      // Continue with loading false even if profile fetch fails
     } finally {
       setLoading(false);
     }
@@ -136,11 +159,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) {
         console.error('❌ Error fetching user profile:', error);
         
-        // If profile doesn't exist, try creating it once
         if (error.code === 'PGRST116') {
           console.log('📝 Profile not found, attempting to create...');
           await createUserProfile(userId);
-          // Retry once after creation
           const { data: retryData, error: retryError } = await supabase
             .from('profiles')
             .select('*')
@@ -252,17 +273,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('❌ Sign out error:', error);
       throw error;
     }
+    setUserRoles([]);
     console.log('✅ Sign out successful');
   };
 
   const hasRole = (role: string): boolean => {
-    if (!userProfile) return false;
-    
-    // Admin has access to everything
-    if (userProfile.role === 'admin') return true;
-    
-    // Check specific role
-    return userProfile.role === role;
+    // First check secure user_roles table
+    if (userRoles.includes(role)) {
+      return true;
+    }
+    // Admin in user_roles has access to everything
+    if (userRoles.includes('admin')) {
+      return true;
+    }
+    // Fallback to profile role for backwards compatibility
+    if (userProfile?.role === role) {
+      return true;
+    }
+    if (userProfile?.role === 'admin') {
+      return true;
+    }
+    return false;
   };
 
   return (
