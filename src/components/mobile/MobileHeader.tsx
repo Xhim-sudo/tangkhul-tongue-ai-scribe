@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Search, Bell } from "lucide-react";
+import { ArrowLeft, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
+import MobileDrawer from "./MobileDrawer";
 
 interface MobileHeaderProps {
   title: string;
   onBack?: () => void;
   showSearch?: boolean;
   onSearchClick?: () => void;
-  onNotificationClick?: () => void;
   notificationCount?: number;
+  activeTab?: string;
+  onTabChange?: (tab: string) => void;
 }
 
 export default function MobileHeader({
@@ -16,8 +18,9 @@ export default function MobileHeader({
   onBack,
   showSearch = false,
   onSearchClick,
-  onNotificationClick,
   notificationCount = 0,
+  activeTab = "translate",
+  onTabChange = () => {},
 }: MobileHeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
@@ -80,18 +83,11 @@ export default function MobileHeader({
             </button>
           )}
           
-          <button 
-            onClick={onNotificationClick}
-            className="p-2.5 hover:bg-accent/80 rounded-xl transition-all active:scale-95 relative touch-target"
-            aria-label={`Notifications${notificationCount > 0 ? ` (${notificationCount})` : ''}`}
-          >
-            <Bell className="w-5 h-5" />
-            {notificationCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] bg-destructive text-destructive-foreground text-xs font-bold rounded-full flex items-center justify-center">
-                {notificationCount > 9 ? '9+' : notificationCount}
-              </span>
-            )}
-          </button>
+          <MobileDrawer 
+            activeTab={activeTab}
+            onTabChange={onTabChange}
+            notificationCount={notificationCount}
+          />
         </div>
       </div>
     </header>

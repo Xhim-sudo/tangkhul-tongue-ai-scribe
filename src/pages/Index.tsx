@@ -148,8 +148,9 @@ const Index = () => {
           title={getHeaderTitle()} 
           showSearch 
           onSearchClick={() => setShowSearch(true)}
-          onNotificationClick={() => setActiveTab('notifications')}
           notificationCount={notificationCount}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
         />
         <MobileRouter activeTab={activeTab}>
           {renderContent()}
