@@ -1,4 +1,4 @@
-import { Home, Languages, BookOpen, User, Award, Trophy } from "lucide-react";
+import { Home, BookOpen, User, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface BottomNavProps {
@@ -6,11 +6,11 @@ interface BottomNavProps {
   onTabChange: (tab: string) => void;
 }
 
+// Core 4 high-value, high-frequency actions
 const navItems = [
-  { id: "translate", icon: Home, label: "Home" },
+  { id: "translate", icon: Home, label: "Translate" },
   { id: "training", icon: BookOpen, label: "Contribute" },
-  { id: "leaderboard", icon: Trophy, label: "Ranks" },
-  { id: "contributor", icon: Award, label: "Stats" },
+  { id: "contributor", icon: BarChart3, label: "Stats" },
   { id: "profile", icon: User, label: "Profile" },
 ];
 
