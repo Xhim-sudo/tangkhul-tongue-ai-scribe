@@ -52,24 +52,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('🔧 AuthProvider: Setting up auth state management');
-    
-    // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('🔔 Auth state changed:', event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Handle profile fetching separately with timeout
         if (session?.user) {
-          console.log('👤 User authenticated, fetching profile...');
           setTimeout(() => {
             fetchUserProfileWithTimeout(session.user.id);
             fetchUserRoles(session.user.id);
           }, 0);
         } else {
-          console.log('👋 User signed out, clearing profile');
           setUserProfile(null);
           setUserRoles([]);
           setLoading(false);
@@ -77,25 +70,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
-    // Check for existing session
     const initializeAuth = async () => {
       try {
-        console.log('🚀 Checking for existing session...');
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error('❌ Error getting session:', error);
           setLoading(false);
           return;
         }
-
-        console.log('📝 Initial session:', session?.user?.id || 'No session');
         
         if (!session) {
           setLoading(false);
         }
       } catch (error) {
-        console.error('💥 Error in initializeAuth:', error);
         setLoading(false);
       }
     };
@@ -103,7 +90,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initializeAuth();
 
     return () => {
-      console.log('🧹 Cleaning up auth subscription');
       subscription.unsubscribe();
     };
   }, []);
@@ -116,16 +102,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('user_id', userId);
 
       if (error) {
-        console.error('Failed to fetch user roles:', error);
         return;
       }
 
       if (data && data.length > 0) {
-        console.log('✅ User roles found:', data.map(r => r.role));
         setUserRoles(data.map(r => r.role));
       }
     } catch (error) {
-      console.error('Failed to fetch user roles:', error);
+      // Silent fail
     }
   };
 
@@ -140,7 +124,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await Promise.race([fetchPromise, timeoutPromise]);
     } catch (error) {
-      console.error('⏰ Profile fetch failed or timed out:', error);
+      // Silent fail - timeout or error
     } finally {
       setLoading(false);
     }
@@ -148,8 +132,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchUserProfile = async (userId: string) => {
     try {
-      console.log('🔍 Fetching profile for user:', userId);
-      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -157,10 +139,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .maybeSingle();
 
       if (error) {
-        console.error('❌ Error fetching user profile:', error);
-        
         if (error.code === 'PGRST116') {
-          console.log('📝 Profile not found, attempting to create...');
           await createUserProfile(userId);
           const { data: retryData, error: retryError } = await supabase
             .from('profiles')
@@ -169,12 +148,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             .maybeSingle();
           
           if (retryError) {
-            console.error('❌ Retry failed:', retryError);
             return;
           }
           
           if (retryData) {
-            console.log('✅ Profile created and fetched:', retryData);
             setUserProfile(retryData);
           }
         }
@@ -182,14 +159,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (data) {
-        console.log('✅ Profile found:', data);
         setUserProfile(data);
       } else {
-        console.log('🤷 No profile found, attempting to create...');
         await createUserProfile(userId);
       }
     } catch (error) {
-      console.error('💥 Error in fetchUserProfile:', error);
+      // Silent fail
     }
   };
 
@@ -197,11 +172,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { data: authUser } = await supabase.auth.getUser();
       if (!authUser.user) {
-        console.error('❌ No auth user found for profile creation');
         return;
       }
 
-      console.log('🆕 Creating profile for user:', userId);
       const profileData = {
         id: userId,
         email: authUser.user.email || '',
@@ -217,33 +190,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .select()
         .single();
 
-      if (error) {
-        console.error('❌ Error creating user profile:', error);
-      } else {
-        console.log('✅ Profile created successfully:', data);
+      if (!error && data) {
         setUserProfile(data);
       }
     } catch (error) {
-      console.error('💥 Error in createUserProfile:', error);
+      // Silent fail
     }
   };
 
   const signIn = async (email: string, password: string) => {
-    console.log('🔐 Attempting sign in for:', email);
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
     if (error) {
-      console.error('❌ Sign in error:', error);
       throw error;
     }
-    console.log('✅ Sign in successful');
   };
 
   const signUp = async (email: string, password: string, metadata?: any) => {
-    console.log('📝 Attempting sign up for:', email);
     const redirectUrl = `${window.location.origin}/`;
     
     const { error } = await supabase.auth.signUp({
@@ -260,33 +226,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     if (error) {
-      console.error('❌ Sign up error:', error);
       throw error;
     }
-    console.log('✅ Sign up successful');
   };
 
   const signOut = async () => {
-    console.log('👋 Signing out...');
     const { error } = await supabase.auth.signOut();
     if (error) {
-      console.error('❌ Sign out error:', error);
       throw error;
     }
     setUserRoles([]);
-    console.log('✅ Sign out successful');
   };
 
   const hasRole = (role: string): boolean => {
-    // First check secure user_roles table
     if (userRoles.includes(role)) {
       return true;
     }
-    // Admin in user_roles has access to everything
     if (userRoles.includes('admin')) {
       return true;
     }
-    // Fallback to profile role for backwards compatibility
     if (userProfile?.role === role) {
       return true;
     }

@@ -124,7 +124,7 @@ const ProfilePage = () => {
                   </Button>
                 ) : (
                   <div className="flex gap-2">
-                    <Button onClick={handleSave} size="sm" className="bg-success hover:bg-success-dark">
+                    <Button onClick={handleSave} size="sm" className="bg-success hover:opacity-90">
                       <Save className="w-4 h-4 mr-2" />
                       Save
                     </Button>
@@ -140,7 +140,7 @@ const ProfilePage = () => {
               </div>
 
               <div className="flex flex-wrap gap-2 mt-4">
-                <Badge className="bg-gradient-to-r from-primary to-primary-dark text-primary-foreground">
+                <Badge className="bg-primary text-primary-foreground">
                   {userProfile?.role || 'contributor'}
                 </Badge>
                 {userProfile?.staff_id && (
@@ -156,7 +156,7 @@ const ProfilePage = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-gradient-to-br from-primary to-primary-dark text-primary-foreground border-0 shadow-glow">
+        <Card className="bg-primary text-primary-foreground border-0">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -168,7 +168,7 @@ const ProfilePage = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-accent to-accent-dark text-accent-foreground border-0 shadow-cyan-glow">
+        <Card className="bg-accent text-accent-foreground border-0">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -180,7 +180,7 @@ const ProfilePage = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-success to-success-dark text-success-foreground border-0">
+        <Card className="bg-success text-success-foreground border-0">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
