@@ -14,43 +14,34 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, requireAuth = true }) =
   const location = useLocation();
 
   useEffect(() => {
-    console.log('🛡️ AuthGuard check:', { user: !!user, loading, requireAuth, path: location.pathname });
-    
     if (!loading) {
       if (requireAuth && !user) {
-        console.log('🔒 Redirecting to auth - authentication required');
         navigate('/auth', { replace: true });
       } else if (!requireAuth && user && location.pathname === '/auth') {
-        console.log('🏠 Redirecting to home - user already authenticated');
         navigate('/', { replace: true });
       }
     }
   }, [user, loading, requireAuth, navigate, location.pathname]);
 
-  // Show loading spinner with timeout indicator
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-500 mx-auto"></div>
-          <p className="mt-4 text-orange-600">Loading authentication...</p>
-          <p className="text-sm text-gray-500">If this takes too long, please refresh the page</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-primary">Loading...</p>
         </div>
       </div>
     );
   }
 
   if (requireAuth && !user) {
-    console.log('🚫 Access denied - redirecting to auth');
-    return null; // Will redirect to auth page
+    return null;
   }
 
   if (!requireAuth && user && location.pathname === '/auth') {
-    console.log('🚫 Already authenticated - redirecting to home');
-    return null; // Will redirect to home page
+    return null;
   }
 
-  console.log('✅ AuthGuard passed - rendering children');
   return <>{children}</>;
 };
 
