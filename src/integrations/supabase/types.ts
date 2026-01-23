@@ -644,10 +644,18 @@ export type Database = {
         Returns: boolean
       }
       generate_staff_id: { Args: never; Returns: string }
-      has_role: {
-        Args: { check_role: Database["public"]["Enums"]["app_role"] }
-        Returns: boolean
-      }
+      has_role:
+        | {
+            Args: {
+              _role: Database["public"]["Enums"]["app_role"]
+              _user_id: string
+            }
+            Returns: boolean
+          }
+        | {
+            Args: { check_role: Database["public"]["Enums"]["app_role"] }
+            Returns: boolean
+          }
       mark_golden_data: { Args: { entry_id: string }; Returns: boolean }
     }
     Enums: {
