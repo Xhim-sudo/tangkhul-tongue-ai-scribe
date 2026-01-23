@@ -29,10 +29,10 @@ const AccuracyDashboard = () => {
 
   const loadAccuracyStats = async () => {
     try {
-      // Get overall accuracy
+      // Get overall accuracy using correct column name 'score'
       const { data: accuracyData } = await supabase
         .from('accuracy_metrics')
-        .select('accuracy_percentage, total_contributions, golden_data_count');
+        .select('score, metric_type, contributor_id');
 
       // Get golden data count
       const { data: goldenData } = await supabase
@@ -45,37 +45,38 @@ const AccuracyDashboard = () => {
         .from('training_entries')
         .select('id');
 
-      // Get top contributors
+      // Get top contributors with their scores
       const { data: topContributors } = await supabase
         .from('accuracy_metrics')
         .select('contributor_id, score, metric_type')
         .order('score', { ascending: false })
         .limit(5);
 
-      // Get category accuracy
+      // Get category accuracy using category_id with join
       const { data: categoryData } = await supabase
         .from('training_entries')
-        .select('category_id, is_golden_data');
+        .select('category_id, is_golden_data, training_categories(name)');
 
       // Calculate category accuracy
       const categoryStats = categoryData?.reduce((acc: any, entry: any) => {
-        if (!acc[entry.category]) {
-          acc[entry.category] = { approved: 0, total: 0 };
+        const categoryName = entry.training_categories?.name || 'Uncategorized';
+        if (!acc[categoryName]) {
+          acc[categoryName] = { approved: 0, total: 0 };
         }
-        acc[entry.category].approved++;
-        acc[entry.category].total++;
+        if (entry.is_golden_data) acc[categoryName].approved++;
+        acc[categoryName].total++;
         return acc;
       }, {});
 
       const categoryAccuracy = Object.entries(categoryStats || {}).map(([category, stats]: [string, any]) => ({
         category,
-        accuracy: Math.round((stats.approved / stats.total) * 100),
+        accuracy: stats.total > 0 ? Math.round((stats.approved / stats.total) * 100) : 0,
         count: stats.total
       }));
 
-      // Calculate overall accuracy
+      // Calculate overall accuracy from scores
       const overallAccuracy = accuracyData?.length 
-        ? Math.round((accuracyData.reduce((sum: number, metric: any) => sum + parseFloat(metric.accuracy_percentage), 0) / accuracyData.length) * 100) / 100
+        ? Math.round((accuracyData.reduce((sum: number, metric: any) => sum + (metric.score || 0), 0) / accuracyData.length) * 100) / 100
         : 0;
 
       setAccuracyStats({
@@ -87,7 +88,7 @@ const AccuracyDashboard = () => {
         categoryAccuracy: categoryAccuracy || []
       });
     } catch (error) {
-      console.error('Failed to load accuracy stats:', error);
+      // Silent error handling for production
     }
   };
 
@@ -108,12 +109,12 @@ const AccuracyDashboard = () => {
     try {
       const { data } = await supabase
         .from('training_submissions_log')
-        .select('english_text, tangkhul_text, category, created_at')
+        .select('english_text, tangkhul_text, category_id, created_at, training_categories(name)')
         .order('created_at', { ascending: false })
         .limit(25);
       setKnowledgeEntries(data || []);
     } catch (e) {
-      console.error('Failed to load knowledge entries:', e);
+      // Silent error handling for production
     }
   };
 
@@ -146,7 +147,7 @@ const AccuracyDashboard = () => {
                 <div key={idx} className="p-3 bg-white/50 rounded-lg border border-orange-100">
                   <div className="flex items-center justify-between">
                     <span className="font-medium">{e.english_text}</span>
-                    <Badge variant="outline" className="border-orange-200">{e.category || 'general'}</Badge>
+                    <Badge variant="outline" className="border-orange-200">{e.training_categories?.name || 'general'}</Badge>
                   </div>
                   <p className="text-sm text-gray-700 mt-1">→ {e.tangkhul_text}</p>
                   <p className="text-xs text-gray-500 mt-1">{new Date(e.created_at).toLocaleString()}</p>
@@ -195,24 +196,23 @@ const AccuracyDashboard = () => {
         <CardContent>
           <div className="space-y-3">
             {accuracyStats.topContributors.map((contributor, index) => (
-              <div key={contributor.id} className="flex items-center gap-3 p-3 bg-white/50 rounded-lg">
+              <div key={contributor.contributor_id || index} className="flex items-center gap-3 p-3 bg-white/50 rounded-lg">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white font-bold">
                   {index + 1}
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
-                    <span className="font-medium">{contributor.profiles?.full_name || 'Anonymous'}</span>
+                    <span className="font-medium">Contributor {index + 1}</span>
                     <Badge className={
-                      contributor.accuracy_percentage >= 95 ? "bg-green-100 text-green-800" :
-                      contributor.accuracy_percentage >= 90 ? "bg-blue-100 text-blue-800" :
+                      (contributor.score || 0) >= 0.95 ? "bg-green-100 text-green-800" :
+                      (contributor.score || 0) >= 0.90 ? "bg-blue-100 text-blue-800" :
                       "bg-yellow-100 text-yellow-800"
                     }>
-                      {contributor.accuracy_percentage}%
+                      {Math.round((contributor.score || 0) * 100)}%
                     </Badge>
                   </div>
                   <div className="flex items-center gap-4 text-sm text-gray-600">
-                    <span>{contributor.total_contributions} contributions</span>
-                    <span>{contributor.golden_data_count} golden entries</span>
+                    <span>{contributor.metric_type || 'accuracy'}</span>
                   </div>
                 </div>
               </div>

@@ -121,7 +121,7 @@ const ManagementPortal = () => {
           *,
           profiles:contributor_id(full_name, email, staff_id)
         `)
-        .order('accuracy_percentage', { ascending: false })
+        .order('score', { ascending: false })
         .limit(10);
 
       if (error) throw error;
@@ -144,17 +144,17 @@ const ManagementPortal = () => {
 
       const { data: accuracyData } = await supabase
         .from('accuracy_metrics')
-        .select('accuracy_percentage');
+        .select('score');
 
       const averageAccuracy = accuracyData?.length 
-        ? accuracyData.reduce((sum: number, metric: any) => sum + parseFloat(metric.accuracy_percentage), 0) / accuracyData.length
+        ? accuracyData.reduce((sum: number, metric: any) => sum + (metric.score || 0), 0) / accuracyData.length
         : 0;
 
       setSystemStats({
         totalContributors: contributors?.length || 0,
         goldenDataCount: goldenData?.length || 0,
-        overallAccuracy: Math.round(averageAccuracy * 100) / 100,
-        readyForAI: averageAccuracy >= 99
+        overallAccuracy: Math.round(averageAccuracy * 100),
+        readyForAI: averageAccuracy >= 0.99
       });
     } catch (error: any) {
       logError(error, 'ManagementPortal.loadSystemStats');
@@ -393,16 +393,15 @@ const ManagementPortal = () => {
                   <div className="flex items-center justify-between">
                     <span className="font-medium">{metric.profiles?.full_name || 'Anonymous'}</span>
                     <Badge className={
-                      metric.accuracy_percentage >= 95 ? "bg-green-100 text-green-800" :
-                      metric.accuracy_percentage >= 90 ? "bg-blue-100 text-blue-800" :
+                      (metric.score || 0) >= 0.95 ? "bg-green-100 text-green-800" :
+                      (metric.score || 0) >= 0.90 ? "bg-blue-100 text-blue-800" :
                       "bg-yellow-100 text-yellow-800"
                     }>
-                      {metric.accuracy_percentage}% accuracy
+                      {Math.round((metric.score || 0) * 100)}% accuracy
                     </Badge>
                   </div>
                   <div className="flex items-center gap-4 text-sm text-gray-600">
-                    <span>{metric.total_contributions} contributions</span>
-                    <span>{metric.golden_data_count} golden entries</span>
+                    <span>{metric.metric_type || 'accuracy'}</span>
                     {metric.profiles?.staff_id && (
                       <span>ID: {metric.profiles.staff_id}</span>
                     )}

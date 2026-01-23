@@ -38,7 +38,7 @@ const EnhancedUserManagement = () => {
         .from('profiles')
         .select(`
           *,
-          accuracy_metrics(accuracy_percentage, total_contributions, golden_data_count)
+          accuracy_metrics(score, metric_type)
         `)
         .order('created_at', { ascending: false });
 
@@ -274,39 +274,28 @@ const EnhancedUserManagement = () => {
                         {metrics && (
                           <>
                             <Badge className={
-                              metrics.accuracy_percentage >= 95 ? "bg-green-100 text-green-800 border-green-200" :
-                              metrics.accuracy_percentage >= 90 ? "bg-blue-100 text-blue-800 border-blue-200" :
+                              (metrics.score || 0) >= 0.95 ? "bg-green-100 text-green-800 border-green-200" :
+                              (metrics.score || 0) >= 0.90 ? "bg-blue-100 text-blue-800 border-blue-200" :
                               "bg-yellow-100 text-yellow-800 border-yellow-200"
                             }>
                               <TrendingUp className="w-3 h-3 mr-1" />
-                              {metrics.accuracy_percentage}% accuracy
+                              {Math.round((metrics.score || 0) * 100)}% accuracy
                             </Badge>
                             <Badge variant="outline" className="border-orange-200 text-orange-700">
-                              {metrics.total_contributions} contributions
-                            </Badge>
-                            <Badge variant="outline" className="border-green-200 text-green-700">
-                              {metrics.golden_data_count} golden entries
+                              {metrics.metric_type || 'accuracy'}
                             </Badge>
                           </>
                         )}
                       </div>
 
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                         <div>
                           <span className="text-gray-500">Joined:</span>
                           <span className="ml-2 font-medium">{new Date(user.created_at).toLocaleDateString()}</span>
                         </div>
                         <div>
-                          <span className="text-gray-500">Contributions:</span>
-                          <span className="ml-2 font-medium">{metrics?.total_contributions || 0}</span>
-                        </div>
-                        <div>
                           <span className="text-gray-500">Accuracy:</span>
-                          <span className="ml-2 font-medium">{metrics?.accuracy_percentage || 0}%</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Golden Data:</span>
-                          <span className="ml-2 font-medium">{metrics?.golden_data_count || 0}</span>
+                          <span className="ml-2 font-medium">{Math.round((metrics?.score || 0) * 100)}%</span>
                         </div>
                         <div>
                           <span className="text-gray-500">Staff ID:</span>
