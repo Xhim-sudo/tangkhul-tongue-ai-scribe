@@ -92,17 +92,23 @@ export const useTranslation = () => {
     }
   };
 
-  const submitTrainingData = async (englishText: string, tangkhulText: string, category: string, context?: string, tags?: string[]) => {
+  const submitTrainingData = async (englishText: string, tangkhulText: string, categoryId?: string, linguisticNotes?: string, grammarFeatures?: Record<string, any>) => {
     try {
-      const { error } = await (supabase as any)
-        .from('training_entries')
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const isValidUUID = categoryId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(categoryId);
+
+      const { error } = await supabase
+        .from('training_submissions_log')
         .insert({
-          english_text: englishText,
-          tangkhul_text: tangkhulText,
-          category,
-          context,
-          tags,
-          contributor_id: (await supabase.auth.getUser()).data.user?.id
+          contributor_id: user.id,
+          english_text: englishText.trim(),
+          tangkhul_text: tangkhulText.trim(),
+          category_id: isValidUUID ? categoryId : null,
+          linguistic_notes: linguisticNotes || null,
+          grammar_features: grammarFeatures || null,
+          is_golden_data: false,
         });
 
       if (error) throw error;
