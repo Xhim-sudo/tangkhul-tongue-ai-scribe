@@ -102,13 +102,7 @@ const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange }) => {
     },
     {
       id: 'admin',
-      label: 'Admin Panel',
-      icon: Shield,
-      roles: ['admin']
-    },
-    {
-      id: 'management',
-      label: 'Old Management',
+      label: 'Admin',
       icon: Shield,
       roles: ['admin']
     }

@@ -6,14 +6,22 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { 
   Users, FolderTree, Download, 
-  UserCheck, Plus, Trash2, Activity, LayoutDashboard 
+  UserCheck, Plus, Trash2, Activity, LayoutDashboard,
+  Shield, CheckCircle, XCircle, Phone, Award
 } from "lucide-react";
 import CSVImport from './CSVImport';
 import AdminDashboard from './admin/AdminDashboard';
 import AdvancedExport from './admin/AdvancedExport';
 import LiveActivityPanel from './admin/LiveActivityPanel';
+import SystemOverview from './SystemOverview';
+import CategoryManagement from './CategoryManagement';
+import EnhancedUserManagement from './EnhancedUserManagement';
+import { useAuth } from '@/contexts/AuthContext';
+import { useWhatsApp } from '@/hooks/useWhatsApp';
+import { useDataExport } from '@/hooks/useDataExport';
+import { useError } from '@/contexts/ErrorContext';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { toast } from '@/hooks/use-toast';
 import {
   Select,
   SelectContent,
@@ -32,37 +40,117 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 const AdminPanel = () => {
+  const { hasRole, userProfile } = useAuth();
+  const { sendApprovalNotification } = useWhatsApp();
+  const { exportGoldenData, isExporting } = useDataExport();
+  const { logError } = useError();
+
   const [users, setUsers] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [newCategory, setNewCategory] = useState({ name: '', description: '' });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [pendingApprovals, setPendingApprovals] = useState<any[]>([]);
+  const [accuracyMetrics, setAccuracyMetrics] = useState<any[]>([]);
+  const [systemStats, setSystemStats] = useState({
+    totalContributors: 0,
+    goldenDataCount: 0,
+    overallAccuracy: 0,
+    readyForAI: false
+  });
+
+  const isAdmin = hasRole('admin');
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (isAdmin) loadData();
+  }, [isAdmin]);
+
+  // Access check - after all hooks
+  if (!isAdmin) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Card className="w-96 border-destructive/50">
+          <CardContent className="p-6 text-center">
+            <Shield className="w-12 h-12 text-destructive mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-destructive mb-2">Access Denied</h3>
+            <p className="text-muted-foreground">You don't have permission to access the admin panel.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const loadData = async () => {
     try {
       setLoading(true);
 
-      const { data: usersData } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const [usersRes, categoriesRes] = await Promise.all([
+        supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+        supabase.from('training_categories').select('*').order('created_at', { ascending: false }),
+      ]);
 
-      const { data: categoriesData } = await supabase
-        .from('training_categories')
-        .select('*')
-        .order('created_at', { ascending: false });
+      setUsers(usersRes.data || []);
+      setCategories(categoriesRes.data || []);
 
-      setUsers(usersData || []);
-      setCategories(categoriesData || []);
+      // Load management data in parallel
+      loadPendingApprovals();
+      loadAccuracyMetrics();
+      loadSystemStats();
     } catch (error) {
-      console.error('Failed to load data:', error);
-      toast.error('Failed to load admin data');
+      logError(error as Error, 'AdminPanel.loadData');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadPendingApprovals = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('user_approvals')
+        .select(`*, profiles:user_id(full_name, email, staff_id)`)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setPendingApprovals(data || []);
+    } catch (error: any) {
+      logError(error, 'AdminPanel.loadPendingApprovals');
+    }
+  };
+
+  const loadAccuracyMetrics = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('accuracy_metrics')
+        .select(`*, profiles:contributor_id(full_name, email, staff_id)`)
+        .order('score', { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      setAccuracyMetrics(data || []);
+    } catch (error: any) {
+      logError(error, 'AdminPanel.loadAccuracyMetrics');
+    }
+  };
+
+  const loadSystemStats = async () => {
+    try {
+      const [contributors, goldenData, accuracyData] = await Promise.all([
+        supabase.from('profiles').select('id'),
+        supabase.from('training_entries').select('id').eq('is_golden_data', true),
+        supabase.from('accuracy_metrics').select('score'),
+      ]);
+
+      const avgAccuracy = accuracyData.data?.length
+        ? accuracyData.data.reduce((sum, m) => sum + (m.score || 0), 0) / accuracyData.data.length
+        : 0;
+
+      setSystemStats({
+        totalContributors: contributors.data?.length || 0,
+        goldenDataCount: goldenData.data?.length || 0,
+        overallAccuracy: Math.round(avgAccuracy * 100),
+        readyForAI: avgAccuracy >= 0.99,
+      });
+    } catch (error: any) {
+      logError(error, 'AdminPanel.loadSystemStats');
     }
   };
 
@@ -72,59 +160,85 @@ const AdminPanel = () => {
         .from('profiles')
         .update({ role: newRole as 'admin' | 'expert' | 'reviewer' | 'contributor' })
         .eq('id', userId);
-
       if (error) throw error;
-
-      toast.success('User role updated successfully');
+      toast({ title: "Role updated", description: "User role updated successfully." });
       loadData();
     } catch (error) {
-      console.error('Failed to update role:', error);
-      toast.error('Failed to update user role');
+      toast({ title: "Failed", description: "Failed to update user role.", variant: "destructive" });
     }
   };
 
   const handleCreateCategory = async () => {
     if (!newCategory.name) {
-      toast.error('Category name is required');
+      toast({ title: "Required", description: "Category name is required.", variant: "destructive" });
       return;
     }
-
     try {
       const { error } = await supabase
         .from('training_categories')
-        .insert({
-          name: newCategory.name,
-          description: newCategory.description
-        });
-
+        .insert({ name: newCategory.name, description: newCategory.description });
       if (error) throw error;
-
-      toast.success('Category created successfully');
+      toast({ title: "Created", description: "Category created successfully." });
       setNewCategory({ name: '', description: '' });
       setIsDialogOpen(false);
       loadData();
     } catch (error) {
-      console.error('Failed to create category:', error);
-      toast.error('Failed to create category');
+      toast({ title: "Failed", description: "Failed to create category.", variant: "destructive" });
     }
   };
 
   const handleDeleteCategory = async (id: string) => {
     if (!confirm('Are you sure you want to delete this category?')) return;
-
     try {
-      const { error } = await supabase
-        .from('training_categories')
-        .delete()
-        .eq('id', id);
-
+      const { error } = await supabase.from('training_categories').delete().eq('id', id);
       if (error) throw error;
-
-      toast.success('Category deleted successfully');
+      toast({ title: "Deleted", description: "Category deleted." });
       loadData();
     } catch (error) {
-      console.error('Failed to delete category:', error);
-      toast.error('Failed to delete category');
+      toast({ title: "Failed", description: "Failed to delete category.", variant: "destructive" });
+    }
+  };
+
+  const approveUser = async (approvalId: string, userId: string, phoneNumber: string, approve: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('user_approvals')
+        .update({
+          status: approve ? 'approved' : 'rejected',
+          approved_by: userProfile?.id,
+          approved_at: new Date().toISOString(),
+          approval_notes: approve ? 'Approved by admin' : 'Rejected by admin'
+        })
+        .eq('id', approvalId);
+      if (error) throw error;
+
+      const { data: userData } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', userId)
+        .maybeSingle();
+
+      await sendApprovalNotification(phoneNumber, userData?.full_name || 'User', approve);
+
+      toast({
+        title: approve ? "User approved" : "User rejected",
+        description: `Notification sent to ${phoneNumber}`,
+      });
+      loadPendingApprovals();
+    } catch (error: any) {
+      logError(error, 'AdminPanel.approveUser');
+      toast({ title: "Failed", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const markGoldenData = async () => {
+    try {
+      const { data, error } = await supabase.rpc('mark_golden_data');
+      if (error) throw error;
+      toast({ title: "Golden data updated", description: `${data} new entries marked as golden data` });
+      loadSystemStats();
+    } catch (error: any) {
+      toast({ title: "Failed", description: error.message, variant: "destructive" });
     }
   };
 
@@ -140,14 +254,18 @@ const AdminPanel = () => {
     <div className="space-y-4 sm:space-y-6 px-1 sm:p-6">
       <div>
         <h2 className="text-xl sm:text-3xl font-bold text-gradient-primary">Admin Control Panel</h2>
-        <p className="text-sm text-muted-foreground mt-1">Manage users, categories, and system settings</p>
+        <p className="text-sm text-muted-foreground mt-1">Manage users, categories, approvals, and system settings</p>
       </div>
 
       <Tabs defaultValue="dashboard" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 gap-1 h-auto p-1">
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-4 lg:grid-cols-8 gap-1 h-auto p-1">
           <TabsTrigger value="dashboard" className="text-xs sm:text-sm py-2">
             <LayoutDashboard className="w-4 h-4 sm:mr-1" />
             <span className="hidden sm:inline">Dashboard</span>
+          </TabsTrigger>
+          <TabsTrigger value="overview" className="text-xs sm:text-sm py-2">
+            <Shield className="w-4 h-4 sm:mr-1" />
+            <span className="hidden sm:inline">Overview</span>
           </TabsTrigger>
           <TabsTrigger value="users" className="text-xs sm:text-sm py-2">
             <Users className="w-4 h-4 sm:mr-1" />
@@ -156,6 +274,15 @@ const AdminPanel = () => {
           <TabsTrigger value="categories" className="text-xs sm:text-sm py-2">
             <FolderTree className="w-4 h-4 sm:mr-1" />
             <span className="hidden sm:inline">Categories</span>
+          </TabsTrigger>
+          <TabsTrigger value="approvals" className="text-xs sm:text-sm py-2">
+            <UserCheck className="w-4 h-4 sm:mr-1" />
+            <span className="hidden sm:inline">Approvals</span>
+            {pendingApprovals.length > 0 && (
+              <Badge variant="destructive" className="ml-1 text-xs h-5 w-5 p-0 flex items-center justify-center">
+                {pendingApprovals.length}
+              </Badge>
+            )}
           </TabsTrigger>
           <TabsTrigger value="import" className="text-xs sm:text-sm py-2">
             <Plus className="w-4 h-4 sm:mr-1" />
@@ -176,13 +303,83 @@ const AdminPanel = () => {
           <AdminDashboard />
         </TabsContent>
 
+        {/* System Overview Tab (from ManagementPortal) */}
+        <TabsContent value="overview" className="space-y-4">
+          <SystemOverview systemStats={systemStats} />
+          
+          {/* Quick Actions */}
+          <Card className="glass border-primary/20">
+            <CardHeader>
+              <CardTitle className="text-foreground">Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-4">
+                <Button
+                  onClick={() => exportGoldenData('json')}
+                  disabled={isExporting}
+                  variant="default"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  {isExporting ? 'Exporting...' : 'Export Golden Dataset'}
+                </Button>
+                <Button onClick={markGoldenData} variant="secondary">
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Update Golden Data
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Top Contributors */}
+          <Card className="glass border-primary/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-foreground">
+                <Award className="w-5 h-5" />
+                Top Contributors by Accuracy
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {accuracyMetrics.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-4">No accuracy data yet</p>
+                ) : (
+                  accuracyMetrics.map((metric, index) => (
+                    <div key={metric.id} className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
+                        {index + 1}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-foreground">{metric.profiles?.full_name || 'Anonymous'}</span>
+                          <Badge variant={
+                            (metric.score || 0) >= 0.95 ? "default" :
+                            (metric.score || 0) >= 0.90 ? "secondary" : "outline"
+                          }>
+                            {Math.round((metric.score || 0) * 100)}% accuracy
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <span>{metric.metric_type || 'accuracy'}</span>
+                          {metric.profiles?.staff_id && <span>ID: {metric.profiles.staff_id}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* Users Tab */}
         <TabsContent value="users" className="space-y-4">
+          <EnhancedUserManagement />
+          
           <Card className="glass border-primary/20">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="w-5 h-5" />
-                User Management ({users.length})
+                All Users ({users.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -190,7 +387,7 @@ const AdminPanel = () => {
                 {users.map((user) => (
                   <div
                     key={user.id}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 sm:p-4 rounded-lg border border-border bg-surface hover:bg-surface-dark transition-colors"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 sm:p-4 rounded-lg border border-border bg-muted/20 hover:bg-muted/40 transition-colors"
                   >
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-foreground truncate text-sm sm:text-base">
@@ -201,7 +398,6 @@ const AdminPanel = () => {
                         <p className="text-xs text-muted-foreground mt-1">ID: {user.staff_id}</p>
                       )}
                     </div>
-
                     <div className="flex items-center gap-2 flex-wrap">
                       <Select
                         value={user.role}
@@ -217,11 +413,7 @@ const AdminPanel = () => {
                           <SelectItem value="admin">Admin</SelectItem>
                         </SelectContent>
                       </Select>
-
-                      <Badge 
-                        variant={user.role === 'admin' ? 'default' : 'outline'}
-                        className="text-xs"
-                      >
+                      <Badge variant={user.role === 'admin' ? 'default' : 'outline'} className="text-xs">
                         {user.role}
                       </Badge>
                     </div>
@@ -234,16 +426,18 @@ const AdminPanel = () => {
 
         {/* Categories Tab */}
         <TabsContent value="categories" className="space-y-4">
+          <CategoryManagement />
+
           <Card className="glass border-primary/20">
             <CardHeader>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <CardTitle className="flex items-center gap-2">
                   <FolderTree className="w-5 h-5" />
-                  Categories ({categories.length})
+                  All Categories ({categories.length})
                 </CardTitle>
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button className="bg-primary text-primary-foreground hover:bg-primary-dark w-full sm:w-auto">
+                    <Button className="w-full sm:w-auto">
                       <Plus className="w-4 h-4 mr-2" />
                       Add Category
                     </Button>
@@ -284,7 +478,7 @@ const AdminPanel = () => {
                 {categories.map((category) => (
                   <div
                     key={category.id}
-                    className="flex items-start justify-between p-3 sm:p-4 rounded-lg border border-border bg-surface hover:bg-surface-dark transition-colors"
+                    className="flex items-start justify-between p-3 sm:p-4 rounded-lg border border-border bg-muted/20 hover:bg-muted/40 transition-colors"
                   >
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-foreground text-sm sm:text-base">{category.name}</h3>
@@ -303,6 +497,63 @@ const AdminPanel = () => {
                   </div>
                 ))}
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Approvals Tab (from ManagementPortal) */}
+        <TabsContent value="approvals" className="space-y-4">
+          <Card className="glass border-primary/20">
+            <CardHeader>
+              <CardTitle className="text-foreground">Pending User Approvals ({pendingApprovals.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {pendingApprovals.length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">No pending approvals</p>
+              ) : (
+                <div className="space-y-4">
+                  {pendingApprovals.map((approval) => (
+                    <div key={approval.id} className="border border-border rounded-lg p-4 bg-muted/20">
+                      <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <h3 className="font-medium text-foreground">{approval.profiles?.full_name || 'Unknown User'}</h3>
+                          <p className="text-sm text-muted-foreground">{approval.profiles?.email}</p>
+                          <div className="flex items-center gap-2 mt-2 flex-wrap">
+                            <Phone className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm text-foreground">{approval.phone_number}</span>
+                            {approval.profiles?.staff_id && (
+                              <Badge variant="outline" className="text-xs">
+                                ID: {approval.profiles.staff_id}
+                              </Badge>
+                            )}
+                            <Badge variant="outline" className="text-xs">Pending</Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Applied: {new Date(approval.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => approveUser(approval.id, approval.user_id, approval.phone_number, true)}
+                          >
+                            <CheckCircle className="w-4 h-4 mr-1" />
+                            Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => approveUser(approval.id, approval.user_id, approval.phone_number, false)}
+                          >
+                            <XCircle className="w-4 h-4 mr-1" />
+                            Reject
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
