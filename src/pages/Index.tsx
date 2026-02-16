@@ -5,7 +5,6 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import TranslationInterface from "@/components/TranslationInterface";
 import KnowledgeLogger from "@/components/KnowledgeLogger";
 import AccuracyDashboard from "@/components/AccuracyDashboard";
-import ManagementPortal from "@/components/ManagementPortal";
 import ContributorDashboard from "@/components/ContributorDashboard";
 import AccuracyChecker from "@/components/AccuracyChecker";
 import TranslationAnalytics from "@/components/TranslationAnalytics";
@@ -102,9 +101,6 @@ const Index = () => {
         case "admin":
           return hasRole('admin') ? 
             <AdminPanel /> : <div className="p-4 text-center">Access denied</div>;
-        case "management":
-          return hasRole('admin') ? 
-            <ManagementPortal /> : <div className="p-4 text-center">Access denied</div>;
         default:
           return <TranslationInterface />;
       }
@@ -137,7 +133,6 @@ const Index = () => {
         case "collaborate": return "Collaborative Review";
         case "dashboard": return "Dashboard";
         case "admin": return "Admin Panel";
-        case "management": return "Management";
         default: return "Tangkhul Translator";
       }
     };
