@@ -100,16 +100,15 @@ export const useOfflineQueue = () => {
 
       for (const entry of queue) {
         try {
+          const isValidUUID = entry.category_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(entry.category_id);
           const { error } = await supabase
-            .from('training_entries')
+            .from('training_submissions_log')
             .insert({
               english_text: entry.english_text,
               tangkhul_text: entry.tangkhul_text,
-              category_id: entry.category_id || null,
+              category_id: isValidUUID ? entry.category_id : null,
               is_golden_data: entry.is_golden_data,
               contributor_id: user.id,
-              confidence_score: 0.7,
-              review_count: 0
             });
 
           if (!error) {
@@ -117,7 +116,7 @@ export const useOfflineQueue = () => {
             syncedCount++;
           }
         } catch (err) {
-          console.error('Failed to sync entry:', err);
+          // skip failed entries, will retry next sync
         }
       }
 
@@ -162,7 +161,7 @@ export const useOfflineQueue = () => {
 
     try {
       const { data } = await supabase
-        .from('training_entries')
+        .from('training_submissions_log')
         .select('english_text, tangkhul_text')
         .eq('is_golden_data', true)
         .limit(200);
