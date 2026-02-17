@@ -1,98 +1,50 @@
 
 
-## Comprehensive Production Fix Plan
+## Plan: Add Reviews to Admin, Fix Auth & Deploy-Ready
 
-### Phase 1: Fix Data Saving - Critical
+### What will be done
 
-**Problem**: Mobile and Desktop forms save to different tables with different schemas.
+1. **Add Reviews tab to the Admin Panel** -- embed the existing ReviewerWorkflow component as a new "Reviews" tab so admins can review submissions directly from the admin interface.
 
-**Solution**: Unify all submissions to use `training_submissions_log` table.
+2. **Fix broken Approvals tab** -- the `user_approvals` table has no `phone_number` column, but the code references `approval.phone_number`. This causes a crash. The approvals UI will be updated to work with the actual schema.
 
-1. **Fix `src/hooks/useTranslation.ts`**:
-   - Update `submitTrainingData` function to insert into `training_submissions_log` (not `training_entries`)
-   - Use correct column names: `category_id` (UUID), `linguistic_notes` (for context), `grammar_features` (JSON for tags)
-   - Remove references to non-existent columns (`category`, `context`, `tags`)
+3. **Fix golden data marking** -- ReviewerWorkflow tries to UPDATE `training_submissions_log.is_golden_data`, but there is no UPDATE RLS policy on that table. A database migration will add an UPDATE policy for admins/reviewers.
 
-2. **Fix `src/components/mobile/TrainingScreenMobile.tsx`**:
-   - Fetch categories from database dynamically (like desktop does)
-   - Pass `category_id` (UUID) instead of category name string
-   - Show real user stats instead of hardcoded values
-   - Add offline queue support (like desktop has)
+4. **Admin password** -- jihalshimray1@gmail.com already has the `admin` role in the database. However, passwords are managed by the authentication system and cannot be set directly via code. You will need to use the "Forgot Password" flow on the login page (which we will add) to reset it to `000000`.
 
-### Phase 2: Fix RLS Policy - Critical
+5. **Add Forgot Password flow** -- add a "Forgot Password" link to the login page and a `/reset-password` page so you can reset the admin password.
 
-**Problem**: `has_role(uuid, unknown)` function signature doesn't match actual function.
+6. **Production cleanup** -- remove `console.log` / `console.error` statements from ReviewerWorkflow and Navigation.
 
-**Solution**: Database migration to fix the RLS policy:
+---
 
+### Technical Details
+
+**Files to modify:**
+
+- `src/components/AdminPanel.tsx` -- Add a "Reviews" tab that renders `<ReviewerWorkflow />`
+- `src/components/AdminPanel.tsx` -- Fix approvals section to not reference `phone_number` (column doesn't exist on `user_approvals`)
+- `src/components/ReviewerWorkflow.tsx` -- Remove `console.log`/`console.error` statements
+- `src/components/Navigation.tsx` -- Remove `console.error` in signOut
+- `src/components/AuthPage.tsx` -- Add "Forgot Password" link that calls `supabase.auth.resetPasswordForEmail`
+- `src/pages/ResetPassword.tsx` -- New page at `/reset-password` route to handle password update
+- `src/App.tsx` -- Add `/reset-password` route
+
+**Database migration:**
 ```sql
--- Drop the broken policy
-DROP POLICY IF EXISTS "Anyone can insert error logs" ON error_logs;
-DROP POLICY IF EXISTS "Users can insert error logs" ON error_logs;
-
--- Create a permissive insert policy for authenticated users
-CREATE POLICY "Authenticated users can insert error logs" ON error_logs
-  FOR INSERT TO authenticated
-  WITH CHECK (true);
-
--- Recreate admin view policy with correct function
-DROP POLICY IF EXISTS "Admins can view all error logs" ON error_logs;
-CREATE POLICY "Admins can view all error logs" ON error_logs
-  FOR SELECT TO authenticated
-  USING (check_user_role(auth.uid(), 'admin'));
+-- Allow admins/reviewers to UPDATE training_submissions_log (for golden data marking)
+CREATE POLICY "Admins can update submissions"
+ON public.training_submissions_log
+FOR UPDATE TO authenticated
+USING (check_user_role(auth.uid(), 'admin'::app_role));
 ```
 
-### Phase 3: Unify Mobile and Desktop Experience
+**Admin Panel tab additions:**
+- Add `CheckSquare` icon import for Reviews tab
+- Add `TabsTrigger` for "reviews" in the tabs list
+- Add `TabsContent` rendering `<ReviewerWorkflow />`
 
-1. **Create shared submission hook** (`src/hooks/useSubmission.ts`):
-   - Single source of truth for all training data submissions
-   - Handles offline queue
-   - Proper error handling and toast notifications
-
-2. **Update `TrainingScreenMobile.tsx`**:
-   - Replace hardcoded stats header with real data from `training_submissions_log`
-   - Add loading states
-   - Improve form validation
-
-3. **Update `TrainingForm.tsx`**:
-   - Use the new shared submission hook
-   - Remove duplicate submission logic
-
-### Phase 4: Improve Mobile UX for Production
-
-1. **Fix sticky header overlap** in `TrainingScreenMobile.tsx`:
-   - Stats header sticks at `top-14` which may overlap with mobile header at `top-0`
-   - Add proper z-index and spacing
-
-2. **Add proper loading and error states**:
-   - Show skeleton loaders while fetching
-   - Show meaningful error messages when submissions fail
-
-3. **Add form persistence**:
-   - Save draft to localStorage to prevent data loss
-
-### Phase 5: Connection Resilience
-
-1. **Add retry logic** for database operations:
-   - Catch connection termination errors
-   - Automatic retry with exponential backoff
-   - Graceful fallback to offline mode
-
-2. **Improve auth session handling**:
-   - Handle refresh token errors gracefully
-   - Auto-redirect to login on session expiry
-
-### Files to Modify:
-- `src/hooks/useTranslation.ts` - Fix submitTrainingData to use correct table/columns
-- `src/components/mobile/TrainingScreenMobile.tsx` - Complete rewrite with real data
-- `src/hooks/useSubmission.ts` - New unified submission hook
-- `src/components/training/TrainingForm.tsx` - Use shared hook
-- Database migration for RLS fix
-
-### Expected Outcome:
-- All submissions (mobile + desktop) save to `training_submissions_log`
-- Real user stats displayed
-- Proper error handling throughout
-- Consistent behavior across all devices
-- Production-ready stability
+**Approvals fix:**
+- Remove `phone_number` references from approval handling since the column doesn't exist
+- Show user email instead of phone for notifications
 
