@@ -10,6 +10,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import AuthPage from "@/components/AuthPage";
 import Index from "@/pages/Index";
 import Install from "@/pages/Install";
+import ResetPassword from "@/pages/ResetPassword";
 import OfflineIndicator from "@/components/OfflineIndicator";
 import { useError } from "@/contexts/ErrorContext";
 
@@ -34,6 +35,10 @@ const AppWithErrorHandling = () => {
           <Route 
             path="/install" 
             element={<Install />} 
+          />
+          <Route 
+            path="/reset-password" 
+            element={<ResetPassword />} 
           />
           <Route 
             path="/" 

@@ -9,13 +9,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useError } from '@/contexts/ErrorContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Eye, EyeOff, User, Mail, Phone, Key } from 'lucide-react';
+import { Eye, EyeOff, User, Mail, Phone, Key, ArrowLeft } from 'lucide-react';
 
 const AuthPage = () => {
   const { signIn, signUp } = useAuth();
   const { logError } = useError();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
   
   // Login form state
   const [loginEmail, setLoginEmail] = useState('');
@@ -106,6 +108,70 @@ const AuthPage = () => {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail) {
+      toast({ title: "Missing email", description: "Please enter your email address.", variant: "destructive" });
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+        redirectTo: `${window.location.origin}/reset-password`
+      });
+      if (error) throw error;
+      toast({ title: "Reset link sent", description: "Check your email for a password reset link." });
+      setShowForgotPassword(false);
+    } catch (error: any) {
+      logError(error, 'AuthPage.handleForgotPassword');
+      toast({ title: "Failed", description: error.message, variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (showForgotPassword) {
+    return (
+      <div className="min-h-screen gradient-primary flex items-center justify-center p-4 md:p-6">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-20 left-10 w-72 h-72 bg-primary-glow/20 rounded-full blur-3xl animate-bounce-subtle" />
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blur-3xl animate-bounce-subtle" style={{ animationDelay: '1s' }} />
+        </div>
+        <Card className="w-full max-w-md glass shadow-extra-large border-border/50 backdrop-blur-xl relative z-10 animate-scale-in">
+          <CardHeader className="text-center space-y-2 pb-6">
+            <CardTitle className="text-2xl font-bold text-gradient-primary">Reset Password</CardTitle>
+            <p className="text-muted-foreground text-sm">Enter your email to receive a reset link</p>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="forgot-email">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="forgot-email"
+                    type="email"
+                    placeholder="Enter your email"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    className="pl-10"
+                    required
+                  />
+                </div>
+              </div>
+              <Button type="submit" className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700" disabled={isLoading}>
+                {isLoading ? 'Sending...' : 'Send Reset Link'}
+              </Button>
+              <button type="button" onClick={() => setShowForgotPassword(false)} className="w-full flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <ArrowLeft className="w-4 h-4" /> Back to login
+              </button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen gradient-primary flex items-center justify-center p-4 md:p-6">
       {/* Animated Background Elements */}
@@ -181,6 +247,14 @@ const AuthPage = () => {
                 >
                   {isLoading ? 'Signing in...' : 'Sign In'}
                 </Button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(true)}
+                  className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors mt-2"
+                >
+                  Forgot your password?
+                </button>
               </form>
             </TabsContent>
             
