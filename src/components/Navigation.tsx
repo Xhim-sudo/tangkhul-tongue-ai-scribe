@@ -35,7 +35,7 @@ const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange }) => {
     try {
       await signOut();
     } catch (error) {
-      console.error('Sign out error:', error);
+      // Sign out failed silently
     }
   };
 

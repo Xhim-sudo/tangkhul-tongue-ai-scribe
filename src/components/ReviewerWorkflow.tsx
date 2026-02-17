@@ -65,7 +65,6 @@ const ReviewerWorkflow = () => {
 
       setSubmissions(formatted);
     } catch (error) {
-      console.error('Failed to load submissions:', error);
       toast.error('Failed to load submissions');
     } finally {
       setLoading(false);
@@ -116,7 +115,6 @@ const ReviewerWorkflow = () => {
       // Refresh list
       loadSubmissions();
     } catch (error) {
-      console.error('Failed to approve submission:', error);
       toast.error('Failed to approve submission');
     } finally {
       setProcessing({ ...processing, [submission.id]: false });
@@ -147,18 +145,13 @@ const ReviewerWorkflow = () => {
           .eq('contributor_id', submission.contributor_id);
       }
 
-      const feedbackText = feedback[submission.id];
-      if (feedbackText) {
-        // Store feedback (you could create a feedback table)
-        console.log('Feedback for submission:', submission.id, feedbackText);
-      }
+      // Feedback is stored in the UI state for now
 
       toast.success('Submission rejected');
       
       // Refresh list
       loadSubmissions();
     } catch (error) {
-      console.error('Failed to reject submission:', error);
       toast.error('Failed to reject submission');
     } finally {
       setProcessing({ ...processing, [submission.id]: false });
@@ -184,7 +177,6 @@ const ReviewerWorkflow = () => {
       // Refresh list
       loadSubmissions();
     } catch (error) {
-      console.error('Failed to mark as golden:', error);
       toast.error('Failed to mark as golden data');
     } finally {
       setProcessing({ ...processing, [submission.id]: false });

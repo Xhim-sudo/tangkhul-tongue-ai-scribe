@@ -7,8 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Users, FolderTree, Download, 
   UserCheck, Plus, Trash2, Activity, LayoutDashboard,
-  Shield, CheckCircle, XCircle, Phone, Award
+  Shield, CheckCircle, XCircle, Award, CheckSquare, Mail
 } from "lucide-react";
+import ReviewerWorkflow from './ReviewerWorkflow';
 import CSVImport from './CSVImport';
 import AdminDashboard from './admin/AdminDashboard';
 import AdvancedExport from './admin/AdvancedExport';
@@ -199,7 +200,7 @@ const AdminPanel = () => {
     }
   };
 
-  const approveUser = async (approvalId: string, userId: string, phoneNumber: string, approve: boolean) => {
+  const approveUser = async (approvalId: string, userId: string, approve: boolean) => {
     try {
       const { error } = await supabase
         .from('user_approvals')
@@ -214,15 +215,18 @@ const AdminPanel = () => {
 
       const { data: userData } = await supabase
         .from('profiles')
-        .select('full_name')
+        .select('full_name, email, phone_number')
         .eq('id', userId)
         .maybeSingle();
 
-      await sendApprovalNotification(phoneNumber, userData?.full_name || 'User', approve);
+      // Send WhatsApp notification if phone number available
+      if (userData?.phone_number) {
+        await sendApprovalNotification(userData.phone_number, userData?.full_name || 'User', approve);
+      }
 
       toast({
         title: approve ? "User approved" : "User rejected",
-        description: `Notification sent to ${phoneNumber}`,
+        description: `Status updated for ${userData?.email || 'user'}`,
       });
       loadPendingApprovals();
     } catch (error: any) {
@@ -258,7 +262,7 @@ const AdminPanel = () => {
       </div>
 
       <Tabs defaultValue="dashboard" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-4 lg:grid-cols-8 gap-1 h-auto p-1">
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-1 h-auto p-1">
           <TabsTrigger value="dashboard" className="text-xs sm:text-sm py-2">
             <LayoutDashboard className="w-4 h-4 sm:mr-1" />
             <span className="hidden sm:inline">Dashboard</span>
@@ -295,6 +299,10 @@ const AdminPanel = () => {
           <TabsTrigger value="live" className="text-xs sm:text-sm py-2">
             <Activity className="w-4 h-4 sm:mr-1" />
             <span className="hidden sm:inline">Live</span>
+          </TabsTrigger>
+          <TabsTrigger value="reviews" className="text-xs sm:text-sm py-2">
+            <CheckSquare className="w-4 h-4 sm:mr-1" />
+            <span className="hidden sm:inline">Reviews</span>
           </TabsTrigger>
         </TabsList>
 
@@ -517,10 +525,11 @@ const AdminPanel = () => {
                       <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
                         <div className="flex-1">
                           <h3 className="font-medium text-foreground">{approval.profiles?.full_name || 'Unknown User'}</h3>
-                          <p className="text-sm text-muted-foreground">{approval.profiles?.email}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Mail className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">{approval.profiles?.email}</span>
+                          </div>
                           <div className="flex items-center gap-2 mt-2 flex-wrap">
-                            <Phone className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-sm text-foreground">{approval.phone_number}</span>
                             {approval.profiles?.staff_id && (
                               <Badge variant="outline" className="text-xs">
                                 ID: {approval.profiles.staff_id}
@@ -535,7 +544,7 @@ const AdminPanel = () => {
                         <div className="flex gap-2">
                           <Button
                             size="sm"
-                            onClick={() => approveUser(approval.id, approval.user_id, approval.phone_number, true)}
+                            onClick={() => approveUser(approval.id, approval.user_id, true)}
                           >
                             <CheckCircle className="w-4 h-4 mr-1" />
                             Approve
@@ -543,7 +552,7 @@ const AdminPanel = () => {
                           <Button
                             size="sm"
                             variant="destructive"
-                            onClick={() => approveUser(approval.id, approval.user_id, approval.phone_number, false)}
+                            onClick={() => approveUser(approval.id, approval.user_id, false)}
                           >
                             <XCircle className="w-4 h-4 mr-1" />
                             Reject
@@ -571,6 +580,11 @@ const AdminPanel = () => {
         {/* Live Activity Tab */}
         <TabsContent value="live" className="space-y-4">
           <LiveActivityPanel />
+        </TabsContent>
+
+        {/* Reviews Tab */}
+        <TabsContent value="reviews" className="space-y-4">
+          <ReviewerWorkflow />
         </TabsContent>
       </Tabs>
     </div>
