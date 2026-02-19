@@ -93,22 +93,22 @@ const ProfilePage = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 p-6">
+    <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6 p-0 sm:p-6">
       {/* Header with Avatar */}
       <Card className="glass border-primary/20 shadow-glow overflow-hidden">
-        <div className="h-32 bg-gradient-to-r from-primary via-primary-glow to-accent" />
-        <CardContent className="pt-0 px-6 pb-6">
-          <div className="flex flex-col md:flex-row items-start md:items-end gap-4 -mt-16">
-            <Avatar className="w-32 h-32 border-4 border-background shadow-xl">
-              <AvatarFallback className="text-4xl bg-gradient-to-br from-primary to-accent text-white">
+        <div className="h-24 sm:h-32 bg-gradient-to-r from-primary via-primary-glow to-accent" />
+        <CardContent className="pt-0 px-3 sm:px-6 pb-4 sm:pb-6">
+          <div className="flex flex-col md:flex-row items-start md:items-end gap-3 sm:gap-4 -mt-12 sm:-mt-16">
+            <Avatar className="w-20 h-20 sm:w-32 sm:h-32 border-4 border-background shadow-xl">
+              <AvatarFallback className="text-2xl sm:text-4xl bg-gradient-to-br from-primary to-accent text-white">
                 {getInitials()}
               </AvatarFallback>
             </Avatar>
 
-            <div className="flex-1 pt-20 md:pt-4">
-              <div className="flex items-start justify-between">
+            <div className="flex-1 pt-2 md:pt-4 w-full">
+              <div className="flex flex-col sm:flex-row items-start sm:justify-between gap-2">
                 <div>
-                  <h2 className="text-3xl font-bold text-foreground">
+                  <h2 className="text-xl sm:text-3xl font-bold text-foreground">
                     {formData.full_name || 'Anonymous User'}
                   </h2>
                   <p className="text-muted-foreground">{user?.email}</p>
@@ -155,13 +155,13 @@ const ProfilePage = () => {
       </Card>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <Card className="bg-primary text-primary-foreground border-0">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm opacity-90">Total Submissions</p>
-                <h3 className="text-3xl font-bold mt-1">{stats.totalSubmissions}</h3>
+                <h3 className="text-2xl sm:text-3xl font-bold mt-1">{stats.totalSubmissions}</h3>
               </div>
               <TrendingUp className="w-10 h-10 opacity-80" />
             </div>
@@ -169,11 +169,11 @@ const ProfilePage = () => {
         </Card>
 
         <Card className="bg-accent text-accent-foreground border-0">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm opacity-90">Golden Data</p>
-                <h3 className="text-3xl font-bold mt-1">{stats.goldenData}</h3>
+                <h3 className="text-2xl sm:text-3xl font-bold mt-1">{stats.goldenData}</h3>
               </div>
               <Star className="w-10 h-10 opacity-80" />
             </div>
@@ -181,11 +181,11 @@ const ProfilePage = () => {
         </Card>
 
         <Card className="bg-success text-success-foreground border-0">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm opacity-90">Accuracy Score</p>
-                <h3 className="text-3xl font-bold mt-1">{stats.accuracyScore}%</h3>
+                <h3 className="text-2xl sm:text-3xl font-bold mt-1">{stats.accuracyScore}%</h3>
               </div>
               <Award className="w-10 h-10 opacity-80" />
             </div>
@@ -199,7 +199,7 @@ const ProfilePage = () => {
           <CardTitle className="text-foreground">Profile Information</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             <div className="space-y-2">
               <Label htmlFor="full_name" className="flex items-center gap-2">
                 <User className="w-4 h-4 text-primary" />
