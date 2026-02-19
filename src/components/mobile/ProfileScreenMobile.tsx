@@ -76,9 +76,9 @@ export default function ProfileScreenMobile() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="bg-background">
       {/* Profile Header */}
-      <div className="bg-gradient-to-br from-primary to-accent p-6 pt-8">
+      <div className="bg-gradient-to-br from-primary to-accent p-4 pt-6 -mx-4 -mt-0">
         <div className="flex items-center gap-4">
           <Avatar className="w-20 h-20 border-4 border-background shadow-lg">
             <AvatarFallback className="bg-background text-primary text-2xl font-bold">
