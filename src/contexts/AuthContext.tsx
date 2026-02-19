@@ -53,7 +53,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
+        // Handle token refresh failures gracefully
+        if (event === 'TOKEN_REFRESHED' && !session) {
+          console.warn('Token refresh failed, clearing session');
+          setUser(null);
+          setSession(null);
+          setUserProfile(null);
+          setUserRoles([]);
+          setLoading(false);
+          return;
+        }
+
+        if (event === 'SIGNED_OUT') {
+          setUser(null);
+          setSession(null);
+          setUserProfile(null);
+          setUserRoles([]);
+          setLoading(false);
+          return;
+        }
+
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -75,6 +95,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
+          // If refresh token is invalid, sign out to clear stale session
+          if (error.message?.includes('Refresh Token') || error.code === 'refresh_token_not_found') {
+            console.warn('Stale session detected, signing out');
+            await supabase.auth.signOut().catch(() => {});
+          }
           setLoading(false);
           return;
         }
@@ -83,6 +108,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setLoading(false);
         }
       } catch (error) {
+        console.warn('Auth initialization error:', error);
+        // Clear any corrupt session state
+        await supabase.auth.signOut().catch(() => {});
         setLoading(false);
       }
     };
