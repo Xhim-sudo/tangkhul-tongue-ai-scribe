@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { cn } from "@/lib/utils";
 import Navigation from "@/components/Navigation";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import TranslationInterface from "@/components/TranslationInterface";
@@ -26,7 +27,8 @@ import { supabase } from "@/integrations/supabase/client";
 const Index = () => {
   const { hasRole, user } = useAuth();
   const { logError } = useError();
-  const [activeTab, setActiveTab] = useState("translate");
+  const isAdmin = hasRole('admin');
+  const [activeTab, setActiveTab] = useState(isAdmin ? "dashboard" : "translate");
   const [showSearch, setShowSearch] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
   const isMobile = useIsMobileView();
@@ -138,7 +140,7 @@ const Index = () => {
     };
 
     return (
-      <div className="min-h-screen bg-background">
+      <div className={cn("min-h-screen", isAdmin ? "bg-gray-950" : "bg-background")}>
         <MobileHeader 
           title={getHeaderTitle()} 
           showSearch 
@@ -161,7 +163,12 @@ const Index = () => {
 
   // Desktop layout
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 dark:from-background dark:to-background">
+    <div className={cn(
+      "min-h-screen",
+      isAdmin 
+        ? "bg-gray-950" 
+        : "bg-gradient-to-br from-orange-50 to-red-50 dark:from-background dark:to-background"
+    )}>
       <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

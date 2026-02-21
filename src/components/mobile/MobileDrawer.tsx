@@ -15,7 +15,8 @@ import {
   LogOut,
   User,
   Bell,
-  Download
+  Download,
+  Crown
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -30,6 +31,7 @@ interface MobileDrawerProps {
 export default function MobileDrawer({ activeTab, onTabChange, notificationCount = 0 }: MobileDrawerProps) {
   const { userProfile, hasRole, signOut } = useAuth();
   const [open, setOpen] = useState(false);
+  const isAdmin = hasRole('admin');
 
   const secondaryItems = [
     { id: "leaderboard", icon: Trophy, label: "Leaderboard", roles: ['admin', 'expert', 'reviewer', 'contributor'], badge: 0 },
@@ -66,6 +68,24 @@ export default function MobileDrawer({ activeTab, onTabChange, notificationCount
     setOpen(false);
   };
 
+  const getRoleBadge = () => {
+    if (isAdmin) {
+      return (
+        <Badge className="bg-red-600 text-white border-red-700 text-xs gap-1">
+          <Crown className="w-3 h-3" />
+          Admin
+        </Badge>
+      );
+    }
+    if (hasRole('expert')) {
+      return <Badge className="bg-purple-600 text-white border-purple-700 text-xs">Expert</Badge>;
+    }
+    if (hasRole('reviewer')) {
+      return <Badge className="bg-blue-600 text-white border-blue-700 text-xs">Reviewer</Badge>;
+    }
+    return <Badge variant="secondary" className="text-xs capitalize">Contributor</Badge>;
+  };
+
   const NavItem = ({ item, isActive }: { item: typeof secondaryItems[0], isActive: boolean }) => {
     const Icon = item.icon;
     return (
@@ -75,8 +95,8 @@ export default function MobileDrawer({ activeTab, onTabChange, notificationCount
           "w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all",
           "active:scale-[0.98]",
           isActive 
-            ? "bg-primary/10 text-primary" 
-            : "text-foreground hover:bg-accent"
+            ? isAdmin ? "bg-red-900/30 text-red-400" : "bg-primary/10 text-primary"
+            : isAdmin ? "text-gray-300 hover:bg-gray-800" : "text-foreground hover:bg-accent"
         )}
       >
         <div className="flex items-center gap-3">
@@ -95,29 +115,51 @@ export default function MobileDrawer({ activeTab, onTabChange, notificationCount
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
+        <Button variant="ghost" size="icon" className={cn(
+          "relative",
+          isAdmin && "text-gray-400 hover:text-white"
+        )}>
           <Menu className="w-5 h-5" />
           {notificationCount > 0 && (
             <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
           )}
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-[300px] p-0">
-        <SheetHeader className="p-6 pb-4 border-b border-border">
+      <SheetContent side="left" className={cn(
+        "w-[300px] p-0",
+        isAdmin && "bg-gray-900 border-gray-700"
+      )}>
+        <SheetHeader className={cn(
+          "p-6 pb-4 border-b",
+          isAdmin ? "border-gray-700" : "border-border"
+        )}>
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
-              <User className="w-6 h-6 text-primary-foreground" />
+            <div className={cn(
+              "w-12 h-12 rounded-full flex items-center justify-center ring-2",
+              isAdmin 
+                ? "bg-gradient-to-br from-red-600 to-red-800 ring-red-500/50" 
+                : "bg-gradient-to-br from-primary to-primary/70 ring-transparent"
+            )}>
+              {isAdmin ? (
+                <Crown className="w-6 h-6 text-white" />
+              ) : (
+                <User className="w-6 h-6 text-primary-foreground" />
+              )}
             </div>
             <div className="text-left">
-              <SheetTitle className="text-base">
+              <SheetTitle className={cn(
+                "text-base",
+                isAdmin && "text-white"
+              )}>
                 {userProfile?.full_name || 'User'}
               </SheetTitle>
               <div className="flex items-center gap-2 mt-1">
-                <Badge variant="secondary" className="text-xs capitalize">
-                  {userProfile?.role || 'contributor'}
-                </Badge>
+                {getRoleBadge()}
                 {userProfile?.staff_id && (
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant="outline" className={cn(
+                    "text-xs",
+                    isAdmin ? "border-gray-600 text-gray-400" : ""
+                  )}>
                     {userProfile.staff_id}
                   </Badge>
                 )}
@@ -129,7 +171,10 @@ export default function MobileDrawer({ activeTab, onTabChange, notificationCount
         <div className="p-4 space-y-6 overflow-y-auto max-h-[calc(100vh-200px)]">
           {/* Secondary Navigation */}
           <div className="space-y-1">
-            <p className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+            <p className={cn(
+              "px-4 text-xs font-semibold uppercase tracking-wider mb-2",
+              isAdmin ? "text-gray-500" : "text-muted-foreground"
+            )}>
               Quick Access
             </p>
             {filterByRole(secondaryItems).map(item => (
@@ -140,9 +185,12 @@ export default function MobileDrawer({ activeTab, onTabChange, notificationCount
           {/* Reviewer Tools */}
           {filterByRole(reviewerItems).length > 0 && (
             <>
-              <Separator />
+              <Separator className={isAdmin ? "bg-gray-700" : ""} />
               <div className="space-y-1">
-                <p className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                <p className={cn(
+                  "px-4 text-xs font-semibold uppercase tracking-wider mb-2",
+                  isAdmin ? "text-gray-500" : "text-muted-foreground"
+                )}>
                   Reviewer Tools
                 </p>
                 {filterByRole(reviewerItems).map(item => (
@@ -155,9 +203,12 @@ export default function MobileDrawer({ activeTab, onTabChange, notificationCount
           {/* Admin Tools */}
           {filterByRole(adminItems).length > 0 && (
             <>
-              <Separator />
+              <Separator className={isAdmin ? "bg-gray-700" : ""} />
               <div className="space-y-1">
-                <p className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                <p className={cn(
+                  "px-4 text-xs font-semibold uppercase tracking-wider mb-2",
+                  isAdmin ? "text-red-400/70" : "text-muted-foreground"
+                )}>
                   Administration
                 </p>
                 {filterByRole(adminItems).map(item => (
@@ -168,7 +219,7 @@ export default function MobileDrawer({ activeTab, onTabChange, notificationCount
           )}
 
           {/* Utility */}
-          <Separator />
+          <Separator className={isAdmin ? "bg-gray-700" : ""} />
           <div className="space-y-1">
             {filterByRole(utilityItems).map(item => (
               <NavItem key={item.id} item={item} isActive={activeTab === item.id} />
@@ -177,7 +228,10 @@ export default function MobileDrawer({ activeTab, onTabChange, notificationCount
         </div>
 
         {/* Sign Out */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border bg-background">
+        <div className={cn(
+          "absolute bottom-0 left-0 right-0 p-4 border-t",
+          isAdmin ? "border-gray-700 bg-gray-900" : "border-border bg-background"
+        )}>
           <Button 
             variant="ghost" 
             className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
